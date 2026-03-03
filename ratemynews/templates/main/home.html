@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="mb-3">Constructive journalist ratings</h1>
+<form method="get" class="row g-2 mb-4">
+  <div class="col-md-4"><input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search journalist"></div>
+  <div class="col-md-3">
+    <select name="outlet" class="form-select">
+      <option value="">All outlets</option>
+      {% for o in outlets %}<option {% if outlet==o %}selected{% endif %} value="{{ o }}">{{ o }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="beat" class="form-select">
+      <option value="">All beats</option>
+      {% for b in beats %}<option {% if beat==b %}selected{% endif %} value="{{ b }}">{{ b }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div>
+</form>
+
+<div class="row">
+  <div class="col-md-8">
+    <h3>Journalists</h3>
+    {% if journalists %}
+      <div class="list-group">
+        {% for j in journalists %}
+          <a class="list-group-item list-group-item-action" href="{{ url_for('journalists.profile', journalist_id=j.id) }}">
+            <strong>{{ j.full_name }}</strong> — {{ j.outlet }} ({{ j.beat }})
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No journalists found yet.</p>
+    {% endif %}
+  </div>
+  <div class="col-md-4">
+    <h5>Top rated</h5>
+    <ul>{% for j in top_rated %}<li>{{ j.full_name }}</li>{% else %}<li class="text-muted">No ratings yet</li>{% endfor %}</ul>
+    <h5>Most reviewed</h5>
+    <ul>{% for j in most_reviewed %}<li>{{ j.full_name }}</li>{% else %}<li class="text-muted">No ratings yet</li>{% endfor %}</ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Your ratings</h2>
+<ul class="list-group">
+{% for r in ratings %}
+  <li class="list-group-item">{{ r.created_at.strftime('%Y-%m-%d') }} — Journalist #{{ r.journalist_id }} — Score: {{ r.score }}</li>
+{% else %}
+  <li class="list-group-item text-muted">No ratings yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}
