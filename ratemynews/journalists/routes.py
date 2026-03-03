@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func
 
@@ -58,7 +58,7 @@ def profile(journalist_id: int):
 
 @journalists_bp.route("/<int:journalist_id>/rate", methods=["POST"])
 @login_required
-@limiter.limit(lambda: str(current_app.config.get("RATINGS_PER_MINUTE", "5/minute")))
+@limiter.limit("5/minute")
 def add_rating(journalist_id: int):
     journalist = Journalist.query.get_or_404(journalist_id)
     form = RatingForm()
