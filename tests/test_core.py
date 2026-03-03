@@ -44,24 +44,3 @@ def test_enforce_24_hour_rule(app):
 def test_block_doxxing_pattern():
     assert contains_doxxing('Call me at 555-123-4567') is True
     assert contains_doxxing('This reporting was balanced and sourced well.') is False
-
-
-from ratemynews.main.routes import extract_feed_items
-
-
-def test_extract_feed_items_from_rss():
-    xml = """
-    <rss><channel>
-      <item>
-        <title>Headline A</title>
-        <link>https://example.com/a</link>
-        <description>Summary A</description>
-        <pubDate>Mon, 03 Mar 2025 10:00:00 GMT</pubDate>
-      </item>
-    </channel></rss>
-    """
-    items = extract_feed_items(xml, "Example")
-    assert len(items) == 1
-    assert items[0]["title"] == "Headline A"
-    assert items[0]["source"] == "Example"
-    assert items[0]["url"] == "https://example.com/a"

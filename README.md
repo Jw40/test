@@ -3,36 +3,12 @@
 RateMyNews is a Flask web app for constructive, evidence-based journalist ratings.
 
 ## Stack
-- Python 3.10+
+- Python 3.11+
 - Flask + SQLAlchemy + Flask-Migrate
 - Flask-Login, WTForms, Bootstrap 5
 - SQLite (dev), Postgres-ready via `DATABASE_URL`
 
-## Correct project structure
-```
-.
-├── ratemynews/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── extensions.py
-│   ├── models.py
-│   ├── forms.py
-│   ├── utils.py
-│   ├── auth/routes.py
-│   ├── main/routes.py
-│   ├── journalists/routes.py
-│   ├── admin/routes.py
-│   ├── templates/
-│   └── static/
-├── scripts/seed.py
-├── tests/test_core.py
-├── conftest.py
-├── run.py
-└── requirements.txt
-```
-
 ## Features
-- News page (`/news`) that aggregates free public RSS feeds (BBC, NPR, Reuters)
 - Auth: register/login/logout + user profile history
 - Home: search journalists, filter by outlet/beat, top-rated and most-reviewed
 - Journalist profile: dimension stats, ratings distribution, sortable/paginated ratings
@@ -40,10 +16,28 @@ RateMyNews is a Flask web app for constructive, evidence-based journalist rating
 - Flagging: report ratings for admin review
 - Admin: journalist CRUD, flag resolution, remove/restore ratings, audit log
 
+## Project structure
+```
+ratemynews/
+  __init__.py
+  config.py
+  extensions.py
+  models.py
+  forms.py
+  utils.py
+  auth/routes.py
+  main/routes.py
+  journalists/routes.py
+  admin/routes.py
+  templates/
+  static/
+scripts/seed.py
+run.py
+tests/
+```
+
 ## Setup
 ```bash
-git clone <repo-url>
-cd test
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -65,11 +59,6 @@ flask run
 # or
 python run.py
 ```
-
-After starting, open:
-- Ratings app: `http://127.0.0.1:5000/`
-- News feed: `http://127.0.0.1:5000/news`
-
 
 ## Seed sample data
 ```bash

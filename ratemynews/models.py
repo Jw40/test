@@ -93,12 +93,7 @@ class Rating(TimestampMixin, db.Model):
         )
         if not latest:
             return True
-
-        latest_created_at = latest.created_at
-        if latest_created_at.tzinfo is None:
-            latest_created_at = latest_created_at.replace(tzinfo=timezone.utc)
-
-        return datetime.now(timezone.utc) - latest_created_at >= timedelta(hours=24)
+        return datetime.now(timezone.utc) - latest.created_at >= timedelta(hours=24)
 
 
 class Flag(TimestampMixin, db.Model):
@@ -110,8 +105,6 @@ class Flag(TimestampMixin, db.Model):
     resolved_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
     rating = db.relationship("Rating", back_populates="flags", foreign_keys=[rating_id])
-    reporter = db.relationship("User", foreign_keys=[user_id])
-    resolver = db.relationship("User", foreign_keys=[resolved_by])
 
 
 class AdminAuditLog(TimestampMixin, db.Model):

@@ -9,7 +9,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 def create_app(config_class=Config):
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__)
     app.config.from_object(config_class)
 
     db.init_app(app)
@@ -27,9 +27,5 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(journalists_bp, url_prefix="/journalists")
     app.register_blueprint(admin_bp, url_prefix="/admin")
-
-    @app.get("/health")
-    def healthcheck():
-        return {"status": "ok"}, 200
 
     return app
