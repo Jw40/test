@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <h2>Admin dashboard</h2>
+  <a class="btn btn-primary" href="{{ url_for('admin.create_journalist') }}">Add journalist</a>
+</div>
+
+<h4>Flags</h4>
+{% for f in flags %}
+  <div class="card p-2 my-2">
+    <p>Rating #{{ f.rating_id }} flagged by user #{{ f.user_id }}: {{ f.reason }}</p>
+    <form method="post" action="{{ url_for('admin.resolve_flag', flag_id=f.id) }}"><button class="btn btn-sm btn-success">Resolve</button></form>
+  </div>
+{% else %}<p class="text-muted">No open flags.</p>{% endfor %}
+
+<h4 class="mt-4">Journalists</h4>
+<ul class="list-group">
+{% for j in journalists %}
+  <li class="list-group-item d-flex justify-content-between">
+    <span>{{ j.full_name }} — {{ j.outlet }}</span>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.edit_journalist', journalist_id=j.id) }}">Edit</a>
+  </li>
+{% endfor %}
+</ul>
+
+<h4 class="mt-4">Audit log</h4>
+<ul class="list-group">
+{% for l in logs %}<li class="list-group-item">{{ l.created_at }} admin#{{ l.admin_user_id }} {{ l.action }} {{ l.target_type }}#{{ l.target_id }}</li>{% else %}<li class="list-group-item text-muted">No actions yet.</li>{% endfor %}
+</ul>
+{% endblock %}
