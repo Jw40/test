@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <img class="img-fluid rounded" src="{{ journalist.profile_photo_url or 'https://via.placeholder.com/400x260?text=Journalist' }}" alt="{{ journalist.full_name }}">
+    <h2 class="mt-3">{{ journalist.full_name }}</h2>
+    <p><strong>{{ journalist.outlet }}</strong> • {{ journalist.beat }} • {{ journalist.location or 'Location N/A' }}</p>
+    <p>{{ journalist.bio or 'No bio yet.' }}</p>
+    <div class="card p-3">
+      <h5>Stats</h5>
+      <p>Average score: {{ '%.2f'|format(averages[0] or 0) }}</p>
+      <p>Accuracy {{ '%.2f'|format(averages[1] or 0) }} | Sourcing {{ '%.2f'|format(averages[2] or 0) }}</p>
+      <p>Fairness {{ '%.2f'|format(averages[3] or 0) }} | Transparency {{ '%.2f'|format(averages[4] or 0) }}</p>
+      <p>Total ratings: {{ averages[5] or 0 }}</p>
+      <h6>Distribution</h6>
+      {% for s,count in distribution.items() %}
+        <div>{{ s }}★ <div class="bar" style="width: {{ (count*20) if count<5 else 100 }}%"></div> ({{ count }})</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-md-8">
+    <h4>Post a rating</h4>
+    {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('journalists.add_rating', journalist_id=journalist.id) }}" class="mb-4">
+        {{ form.hidden_tag() }}
+        <div class="row g-2">
+          <div class="col">{{ form.score.label }}{{ form.score(class='form-control', min=1, max=5) }}</div>
+          <div class="col">{{ form.accuracy.label }}{{ form.accuracy(class='form-control', min=1, max=5) }}</div>
+          <div class="col">{{ form.sourcing.label }}{{ form.sourcing(class='form-control', min=1, max=5) }}</div>
+          <div class="col">{{ form.fairness.label }}{{ form.fairness(class='form-control', min=1, max=5) }}</div>
+          <div class="col">{{ form.transparency.label }}{{ form.transparency(class='form-control', min=1, max=5) }}</div>
+        </div>
+        <div class="mt-2">{{ form.article_url.label }}{{ form.article_url(class='form-control') }}</div>
+        <div class="mt-2">{{ form.article_title.label }}{{ form.article_title(class='form-control') }}</div>
+        <div class="mt-2">{{ form.comment.label }}{{ form.comment(class='form-control', rows=3, maxlength=500) }}</div>
+        <small class="text-muted">Constructive evidence-based comments only. No personal details.</small>
+        <div class="mt-2">{{ form.submit(class='btn btn-primary') }}</div>
+      </form>
+    {% else %}
+      <p><a href="{{ url_for('auth.login') }}">Login to rate</a></p>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center">
+      <h4>Ratings</h4>
+      <form method="get">
+        <select name="sort" onchange="this.form.submit()" class="form-select">
+          <option value="newest" {% if sort=='newest' %}selected{% endif %}>Newest</option>
+          <option value="highest" {% if sort=='highest' %}selected{% endif %}>Highest</option>
+          <option value="lowest" {% if sort=='lowest' %}selected{% endif %}>Lowest</option>
+        </select>
+      </form>
+    </div>
+
+    {% for r in ratings.items %}
+      <div class="card p-3 my-2 {% if r.is_removed %}text-muted{% endif %}">
+        <p><strong>{{ r.user.username }}</strong> rated {{ r.score }}/5 ({{ r.created_at.strftime('%Y-%m-%d %H:%M') }})</p>
+        <p>{{ r.comment or 'No comment provided.' }}</p>
+        {% if r.article %}<a href="{{ r.article.url }}" target="_blank" rel="noopener">Related article</a>{% endif %}
+        {% if current_user.is_authenticated %}
+          <form method="post" action="{{ url_for('journalists.flag_rating', rating_id=r.id) }}">
+            {{ flag_form.hidden_tag() }}
+            {{ flag_form.reason(class='form-control my-2', rows=2, placeholder='Reason for report') }}
+            {{ flag_form.submit(class='btn btn-outline-danger btn-sm') }}
+          </form>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="text-muted">No ratings yet for this journalist.</p>
+    {% endfor %}
+
+    <nav>
+      <ul class="pagination">
+        {% if ratings.has_prev %}<li class="page-item"><a class="page-link" href="?page={{ ratings.prev_num }}&sort={{ sort }}">Previous</a></li>{% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ ratings.page }} / {{ ratings.pages or 1 }}</span></li>
+        {% if ratings.has_next %}<li class="page-item"><a class="page-link" href="?page={{ ratings.next_num }}&sort={{ sort }}">Next</a></li>{% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% endblock %}
