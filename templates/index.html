@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Free News Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>📰 Free News Portal</h1>
+        <p>Aggregated headlines from free public news feeds.</p>
+      </header>
+
+      <section class="controls">
+        <form method="get">
+          <fieldset>
+            <legend>Choose sources</legend>
+            {% for name, _ in feeds.items() %}
+              <label>
+                <input
+                  type="checkbox"
+                  name="source"
+                  value="{{ name }}"
+                  {% if name in selected_sources %}checked{% endif %}
+                />
+                {{ name }}
+              </label>
+            {% endfor %}
+          </fieldset>
+
+          <label for="limit">Max headlines</label>
+          <input id="limit" type="number" name="limit" min="5" max="100" value="{{ limit }}" />
+
+          <button type="submit">Update Feed</button>
+        </form>
+      </section>
+
+      <section class="news-list">
+        {% if news_items %}
+          {% for item in news_items %}
+            <article class="news-card">
+              <h2><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>
+              <p class="meta">
+                <span>{{ item.source }}</span>
+                {% if item.published_at %}
+                  <span>{{ item.published_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
+                {% elif item.published_raw %}
+                  <span>{{ item.published_raw }}</span>
+                {% endif %}
+              </p>
+              {% if item.summary %}
+                <p>{{ item.summary | safe }}</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        {% else %}
+          <p>No news available right now. Try changing the selected sources.</p>
+        {% endif %}
+      </section>
+
+      <footer>
+        <small>Last refreshed {{ now.strftime('%Y-%m-%d %H:%M:%S UTC') }}</small>
+      </footer>
+    </main>
+  </body>
+</html>
