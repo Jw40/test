@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0">Latest News (Free Sources)</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('main.home') }}">Back to profiles</a>
+</div>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="mb-2"><strong>Sources</strong></div>
+  <div class="d-flex flex-wrap gap-3 mb-3">
+    {% for name, _ in feeds.items() %}
+      <label><input type="checkbox" name="source" value="{{ name }}" {% if name in selected_sources %}checked{% endif %}> {{ name }}</label>
+    {% endfor %}
+  </div>
+  <div class="row g-2 align-items-center">
+    <div class="col-auto"><label for="limit" class="col-form-label">Max results</label></div>
+    <div class="col-auto"><input id="limit" class="form-control" type="number" name="limit" min="5" max="100" value="{{ limit }}"></div>
+    <div class="col-auto"><button class="btn btn-primary">Refresh</button></div>
+  </div>
+</form>
+
+{% if items %}
+  <div class="news-grid">
+    {% for item in items %}
+      <article class="card p-3">
+        <h5><a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a></h5>
+        <div class="small text-muted mb-2">
+          {{ item.source }}
+          {% if item.author %}• By {{ item.author }}{% endif %}
+          {% if item.published_at %}• {{ item.published_at.strftime('%Y-%m-%d %H:%M UTC') }}{% elif item.published_raw %}• {{ item.published_raw }}{% endif %}
+        </div>
+        {% if item.summary %}<p class="mb-2">{{ item.summary|safe }}</p>{% endif %}
+
+        {% if current_user.is_authenticated and item.author %}
+          <form method="post" action="{{ url_for('journalists.create_from_news') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="author" value="{{ item.author }}" />
+            <input type="hidden" name="title" value="{{ item.title }}" />
+            <input type="hidden" name="url" value="{{ item.url }}" />
+            <input type="hidden" name="outlet" value="{{ item.source }}" />
+            <button class="btn btn-sm btn-success">Create/Open Journalist Profile</button>
+          </form>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted">No news available right now. Try different sources.</p>
+{% endif %}
+{% endblock %}

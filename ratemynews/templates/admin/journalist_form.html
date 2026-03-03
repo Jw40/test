@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ title }}</h2>
+<form method="post">
+  {{ form.hidden_tag() }}
+  <div class="mb-2">{{ form.full_name.label }}{{ form.full_name(class='form-control') }}</div>
+  <div class="mb-2">{{ form.outlet.label }}{{ form.outlet(class='form-control') }}</div>
+  <div class="mb-2">{{ form.beat.label }}{{ form.beat(class='form-control') }}</div>
+  <div class="mb-2">{{ form.location.label }}{{ form.location(class='form-control') }}</div>
+  <div class="mb-2">{{ form.profile_photo_url.label }}{{ form.profile_photo_url(class='form-control') }}</div>
+  <div class="mb-2">{{ form.bio.label }}{{ form.bio(class='form-control', rows=4) }}</div>
+  {{ form.submit(class='btn btn-primary') }}
+</form>
+{% endblock %}
