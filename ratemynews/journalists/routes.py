@@ -1,13 +1,13 @@
 from urllib.parse import urlparse
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, request, url_for, render_template
 from flask_login import current_user, login_required
 from sqlalchemy import func
 
 from ratemynews import limiter
 from ratemynews.extensions import db
 from ratemynews.forms import FlagForm, RatingForm
-from ratemynews.models import Article, Flag, Journalist, Rating
+from ratemynews.models import Article, Flag, Journalist, JournalistVote, Rating
 from ratemynews.utils import contains_doxxing, contains_profanity
 
 journalists_bp = Blueprint("journalists", __name__)
@@ -56,9 +56,70 @@ def profile(journalist_id: int):
     )
 
 
+@journalists_bp.route("/from-news", methods=["POST"])
+@login_required
+def create_from_news():
+    full_name = (request.form.get("author") or "").strip()
+    article_title = (request.form.get("title") or "Untitled article").strip()
+    article_url = (request.form.get("url") or "").strip()
+    outlet = (request.form.get("outlet") or "Unknown Outlet").strip()
+
+    if not full_name or full_name.lower() in {"unknown", "staff", "admin"}:
+        flash("This article has no clear journalist author to create a profile from.", "warning")
+        return redirect(url_for("main.news_portal"))
+
+    journalist = Journalist.query.filter_by(full_name=full_name, outlet=outlet).first()
+    if not journalist:
+        journalist = Journalist(
+            full_name=full_name,
+            outlet=outlet,
+            beat="General",
+            bio="Profile auto-created from a news article. Please update details.",
+        )
+        db.session.add(journalist)
+        db.session.flush()
+
+    if article_url:
+        existing = Article.query.filter_by(url=article_url).first()
+        if not existing:
+            parsed = urlparse(article_url)
+            article = Article(
+                journalist_id=journalist.id,
+                title=article_title,
+                url=article_url,
+                outlet=parsed.netloc or outlet,
+            )
+            db.session.add(article)
+
+    db.session.commit()
+    flash(f"Journalist profile ready: {journalist.full_name}", "success")
+    return redirect(url_for("journalists.profile", journalist_id=journalist.id))
+
+
+@journalists_bp.route("/<int:journalist_id>/thumb/<string:direction>", methods=["POST"])
+@login_required
+def thumb_vote(journalist_id: int, direction: str):
+    journalist = Journalist.query.get_or_404(journalist_id)
+    if direction not in {"up", "down"}:
+        flash("Invalid vote type.", "danger")
+        return redirect(url_for("journalists.profile", journalist_id=journalist.id))
+
+    value = 1 if direction == "up" else -1
+    vote = JournalistVote.query.filter_by(journalist_id=journalist.id, user_id=current_user.id).first()
+    if vote:
+        vote.value = value
+    else:
+        vote = JournalistVote(journalist_id=journalist.id, user_id=current_user.id, value=value)
+        db.session.add(vote)
+
+    db.session.commit()
+    flash("Your thumbs vote was saved.", "success")
+    return redirect(url_for("journalists.profile", journalist_id=journalist.id))
+
+
 @journalists_bp.route("/<int:journalist_id>/rate", methods=["POST"])
 @login_required
-@limiter.limit("5/minute")
+@limiter.limit(lambda: str(current_app.config.get("RATINGS_PER_MINUTE", "5/minute")))
 def add_rating(journalist_id: int):
     journalist = Journalist.query.get_or_404(journalist_id)
     form = RatingForm()
