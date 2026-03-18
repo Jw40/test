@@ -85,7 +85,24 @@ def _record_guess(article_id: int, is_correct: bool) -> dict[str, float | int]:
     }
 
 
-@main_bp.route("/")
+def _record_guess(article_id: int, is_correct: bool) -> dict[str, float | int]:
+    if article_id not in GUESS_STATS:
+        GUESS_STATS[article_id] = {"attempts": 0, "correct": 0}
+
+    GUESS_STATS[article_id]["attempts"] += 1
+    if is_correct:
+        GUESS_STATS[article_id]["correct"] += 1
+
+    attempts = GUESS_STATS[article_id]["attempts"]
+    correct = GUESS_STATS[article_id]["correct"]
+
+    return {
+        "attempts": attempts,
+        "average_correct": round((correct / attempts) * 100, 1),
+    }
+
+
+@main_bp.route("/", methods=["GET", "POST"])
 def home():
     q = request.args.get("q", "").strip()
     outlet = request.args.get("outlet", "").strip()
@@ -119,6 +136,34 @@ def home():
     outlets = [x[0] for x in Journalist.query.with_entities(Journalist.outlet).distinct().order_by(Journalist.outlet).all()]
     beats = [x[0] for x in Journalist.query.with_entities(Journalist.beat).distinct().order_by(Journalist.beat).all()]
 
+    feedback = None
+
+    if request.method == "GET" and request.args.get("new_round") == "1":
+        session.pop("guess_question", None)
+
+    question = session.get("guess_question")
+    if not question:
+        question = _build_guess_question()
+        session["guess_question"] = question
+
+    if request.method == "POST":
+        game_action = request.form.get("game_action", "guess")
+        if game_action == "new_round":
+            session.pop("guess_question", None)
+            question = _build_guess_question()
+            session["guess_question"] = question
+        elif question:
+            picked_outlet = request.form.get("picked_outlet", "")
+            if picked_outlet in question["options"]:
+                is_correct = picked_outlet == question["correct_outlet"]
+                aggregate = _record_guess(question["article_id"], is_correct=is_correct)
+                feedback = {
+                    "is_correct": is_correct,
+                    "picked_outlet": picked_outlet,
+                    "correct_outlet": question["correct_outlet"],
+                    **aggregate,
+                }
+
     return render_template(
         "main/home.html",
         journalists=journalists,
@@ -129,6 +174,46 @@ def home():
         q=q,
         outlet=outlet,
         beat=beat,
+        question=question,
+        feedback=feedback,
+    )
+
+
+@main_bp.route("/guessing-game", methods=["GET", "POST"])
+def guessing_game():
+    feedback = None
+
+    if request.method == "GET" and request.args.get("new_round") == "1":
+        session.pop("guess_question", None)
+
+    question = session.get("guess_question")
+    if not question:
+        question = _build_guess_question()
+        session["guess_question"] = question
+
+    if request.method == "POST":
+        game_action = request.form.get("game_action", "guess")
+        if game_action == "new_round":
+            session.pop("guess_question", None)
+            question = _build_guess_question()
+            session["guess_question"] = question
+        elif question:
+            picked_outlet = request.form.get("picked_outlet", "")
+            if picked_outlet in question["options"]:
+                is_correct = picked_outlet == question["correct_outlet"]
+                aggregate = _record_guess(question["article_id"], is_correct=is_correct)
+                feedback = {
+                    "is_correct": is_correct,
+                    "picked_outlet": picked_outlet,
+                    "correct_outlet": question["correct_outlet"],
+                    **aggregate,
+                }
+
+    return render_template(
+        "main/guessing_game.html",
+        question=question,
+        feedback=feedback,
+        mainstream_outlets=sorted(MAINSTREAM_AU_OUTLETS),
     )
 
 
