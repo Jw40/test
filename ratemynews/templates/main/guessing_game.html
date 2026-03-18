@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Headline Guessing Game</h1>
+  <a class="btn btn-outline-secondary" href="{{ url_for('main.home') }}">Back to Home</a>
+</div>
+
+<p class="text-muted">Only major Australian and world-leading publishers are included.</p>
+
+<div class="card border-primary mb-4">
+  <div class="card-body">
+    {% if question %}
+      <h2 class="h5">Who published this headline?</h2>
+      <p class="lead">{{ question.title }}</p>
+
+      <form method="post" class="mb-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="d-grid gap-2">
+          {% for option in question.options %}
+            <label class="btn btn-outline-primary text-start">
+              <input class="form-check-input me-2" type="radio" name="picked_outlet" value="{{ option }}" required>
+              {{ option }}
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+          <button class="btn btn-primary" type="submit" name="game_action" value="guess">Submit Guess</button>
+          <button class="btn btn-outline-secondary" type="submit" name="game_action" value="new_round">New Headline</button>
+        </div>
+      </form>
+
+      {% if feedback %}
+        <div class="alert alert-{% if feedback.is_correct %}success{% else %}danger{% endif %}">
+          {% if feedback.is_correct %}
+            ✅ Correct!
+          {% else %}
+            ❌ Incorrect. Correct publisher: <strong>{{ feedback.correct_outlet }}</strong>.
+          {% endif %}
+          <div class="mt-2">
+            Crowd average for this headline: <strong>{{ feedback.average_correct }}%</strong> correct ({{ feedback.attempts }} guesses).
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="alert alert-warning mb-0">No eligible Australian or world-leading article headlines are available yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h2 class="h6">Included publisher pool</h2>
+    <ul class="mb-0">
+      {% for outlet in mainstream_outlets %}
+        <li>{{ outlet }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
