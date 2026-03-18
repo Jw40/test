@@ -26,6 +26,9 @@
         {% for j in journalists %}
           <a class="list-group-item list-group-item-action" href="{{ url_for('journalists.profile', journalist_id=j.id) }}">
             <strong>{{ j.full_name }}</strong> — {{ j.outlet }} ({{ j.beat }})
+            <div class="small text-muted">
+              From: {{ j.location or 'Location N/A' }} • Publisher: {{ j.outlet }}
+            </div>
           </a>
         {% endfor %}
       </div>
