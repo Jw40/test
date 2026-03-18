@@ -3,20 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Free News Portal</title>
+    <title>Headline Publisher Guessing Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
   </head>
   <body>
     <main class="container">
       <header>
-        <h1>📰 Free News Portal</h1>
-        <p>Aggregated headlines from free public news feeds.</p>
+        <h1>🧠 Headline Publisher Guessing Game</h1>
+        <p>Read one headline, pick the publisher, and see how everyone else is doing.</p>
       </header>
 
       <section class="controls">
         <form method="get">
           <fieldset>
-            <legend>Choose sources</legend>
+            <legend>Publishers in this round</legend>
             {% for name, _ in feeds.items() %}
               <label>
                 <input
@@ -30,35 +30,62 @@
             {% endfor %}
           </fieldset>
 
-          <label for="limit">Max headlines</label>
-          <input id="limit" type="number" name="limit" min="5" max="100" value="{{ limit }}" />
-
-          <button type="submit">Update Feed</button>
+          <button type="submit">Update Publishers</button>
+          <button type="submit" name="next" value="1">New Headline</button>
         </form>
       </section>
 
-      <section class="news-list">
-        {% if news_items %}
-          {% for item in news_items %}
-            <article class="news-card">
-              <h2><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a></h2>
-              <p class="meta">
-                <span>{{ item.source }}</span>
-                {% if item.published_at %}
-                  <span>{{ item.published_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
-                {% elif item.published_raw %}
-                  <span>{{ item.published_raw }}</span>
-                {% endif %}
-              </p>
-              {% if item.summary %}
-                <p>{{ item.summary | safe }}</p>
+      {% if question %}
+        <section class="question-card">
+          <h2>Who published this headline?</h2>
+          <p class="headline">{{ question.title }}</p>
+          <p class="meta">
+            {% if question.published_at %}
+              Published {{ question.published_at.strftime('%Y-%m-%d %H:%M UTC') }}
+            {% elif question.published_raw %}
+              Published {{ question.published_raw }}
+            {% endif %}
+          </p>
+
+          <form method="post" class="guess-form">
+            {% for source in selected_sources %}
+              <input type="hidden" name="source" value="{{ source }}" />
+            {% endfor %}
+
+            <div class="option-grid">
+              {% for option in question.options %}
+                <label class="option">
+                  <input type="radio" name="picked_source" value="{{ option }}" required />
+                  {{ option }}
+                </label>
+              {% endfor %}
+            </div>
+
+            <button type="submit">Submit Guess</button>
+          </form>
+
+          {% if feedback %}
+            <div class="result {% if feedback.is_correct %}correct{% else %}incorrect{% endif %}">
+              {% if feedback.is_correct %}
+                ✅ Correct! Nice work.
+              {% else %}
+                ❌ Incorrect. The correct publisher was <strong>{{ feedback.correct_source }}</strong>.
               {% endif %}
-            </article>
-          {% endfor %}
-        {% else %}
-          <p>No news available right now. Try changing the selected sources.</p>
-        {% endif %}
-      </section>
+              <p>
+                Average correct guesses for this headline: <strong>{{ feedback.average_correct }}%</strong>
+                ({{ feedback.attempts }} total guess{% if feedback.attempts != 1 %}es{% endif %}).
+              </p>
+              <p>
+                <a href="{{ question.url }}" target="_blank" rel="noopener noreferrer">Read the full article</a>
+              </p>
+            </div>
+          {% endif %}
+        </section>
+      {% else %}
+        <section class="question-card">
+          <p>No headlines are available right now. Try refreshing in a moment.</p>
+        </section>
+      {% endif %}
 
       <footer>
         <small>Last refreshed {{ now.strftime('%Y-%m-%d %H:%M:%S UTC') }}</small>
