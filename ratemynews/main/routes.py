@@ -10,8 +10,8 @@ main_bp = Blueprint("main", __name__)
 # In-memory aggregate guessing stats keyed by article id.
 GUESS_STATS: dict[int, dict[str, int]] = {}
 
-# Popular mainstream publishers relevant to Australian audiences.
-MAINSTREAM_AU_OUTLETS = {
+# Major Australia + world-leading mainstream publishers used by the game.
+MAINSTREAM_OUTLETS = {
     "ABC News",
     "SBS News",
     "The Sydney Morning Herald",
@@ -21,6 +21,10 @@ MAINSTREAM_AU_OUTLETS = {
     "AFR",
     "9News",
     "7NEWS",
+    "Reuters",
+    "BBC News",
+    "Associated Press",
+    "Financial Times",
 }
 
 
@@ -33,7 +37,7 @@ def _article_outlet(article: Article) -> str | None:
 
 
 def _is_mainstream_au_outlet(outlet: str | None) -> bool:
-    return bool(outlet and outlet in MAINSTREAM_AU_OUTLETS)
+    return bool(outlet and outlet in MAINSTREAM_OUTLETS)
 
 
 def _build_guess_question() -> dict | None:
@@ -210,4 +214,42 @@ def guessing_game():
         question=question,
         feedback=feedback,
         mainstream_outlets=sorted(MAINSTREAM_AU_OUTLETS),
+    )
+
+
+@main_bp.route("/guessing-game", methods=["GET", "POST"])
+def guessing_game():
+    feedback = None
+
+    if request.method == "GET" and request.args.get("new_round") == "1":
+        session.pop("guess_question", None)
+
+    question = session.get("guess_question")
+    if not question:
+        question = _build_guess_question()
+        session["guess_question"] = question
+
+    if request.method == "POST":
+        game_action = request.form.get("game_action", "guess")
+        if game_action == "new_round":
+            session.pop("guess_question", None)
+            question = _build_guess_question()
+            session["guess_question"] = question
+        elif question:
+            picked_outlet = request.form.get("picked_outlet", "")
+            if picked_outlet in question["options"]:
+                is_correct = picked_outlet == question["correct_outlet"]
+                aggregate = _record_guess(question["article_id"], is_correct=is_correct)
+                feedback = {
+                    "is_correct": is_correct,
+                    "picked_outlet": picked_outlet,
+                    "correct_outlet": question["correct_outlet"],
+                    **aggregate,
+                }
+
+    return render_template(
+        "main/guessing_game.html",
+        question=question,
+        feedback=feedback,
+        mainstream_outlets=sorted(MAINSTREAM_OUTLETS),
     )

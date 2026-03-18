@@ -18,8 +18,10 @@ FEEDS: dict[str, str] = {
     "ABC News Australia": "https://www.abc.net.au/news/feed/51120/rss.xml",
     "SBS News": "https://www.sbs.com.au/news/feed",
     "The Sydney Morning Herald": "https://www.smh.com.au/rss/feed.xml",
-    "The Age": "https://www.theage.com.au/rss/feed.xml",
     "The Guardian Australia": "https://www.theguardian.com/au/rss",
+    "Reuters World": "https://feeds.reuters.com/Reuters/worldNews",
+    "BBC World": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "Associated Press": "https://feeds.apnews.com/apnews/topnews",
 }
 
 # In-memory aggregate guessing stats shared by all visitors.
