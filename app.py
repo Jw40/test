@@ -15,9 +15,11 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-guessing-game-secret")
 
 # Free public RSS feeds (no API key required)
 FEEDS: dict[str, str] = {
-    "BBC World": "https://feeds.bbci.co.uk/news/world/rss.xml",
-    "Reuters World": "https://feeds.reuters.com/Reuters/worldNews",
-    "NPR": "https://feeds.npr.org/1004/rss.xml",
+    "ABC News Australia": "https://www.abc.net.au/news/feed/51120/rss.xml",
+    "SBS News": "https://www.sbs.com.au/news/feed",
+    "The Sydney Morning Herald": "https://www.smh.com.au/rss/feed.xml",
+    "The Age": "https://www.theage.com.au/rss/feed.xml",
+    "The Guardian Australia": "https://www.theguardian.com/au/rss",
 }
 
 # In-memory aggregate guessing stats shared by all visitors.
