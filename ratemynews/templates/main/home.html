@@ -1,6 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1 class="mb-3">Constructive journalist ratings</h1>
+
+<div class="card border-primary mb-4">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h2 class="h5 mb-1">Try the Headline Guessing Game</h2>
+      <p class="text-muted mb-0">Guess which Australia or world-leading publisher wrote each headline.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('main.guessing_game') }}">Play Game</a>
+  </div>
+</div>
+
 <form method="get" class="row g-2 mb-4">
   <div class="col-md-4"><input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search journalist"></div>
   <div class="col-md-3">

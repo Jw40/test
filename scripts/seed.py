@@ -7,147 +7,122 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ratemynews import create_app
 from ratemynews.extensions import db
-from ratemynews.models import Article, Journalist, User
+from ratemynews.models import Article, Flag, Journalist, Rating, User
 
 app = create_app()
 
-JOURNALISTS = [
+# Australia + world-leading mainstream outlets only.
+SEED_JOURNALISTS = [
     {
-        "full_name": "Aisha Khan",
-        "outlet": "Global Daily",
+        "full_name": "Laura Tingle",
+        "outlet": "ABC News",
         "beat": "Politics",
-        "location": "New York, NY",
-        "bio": "Covers public policy and elections with a focus on verification practices.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Aisha+Khan",
-        "article_title": "Election data deep dive",
+        "location": "Canberra, AU",
+        "bio": "Covers federal politics and public policy for ABC News.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Laura+Tingle",
+        "article_title": "Budget pressures shape Canberra policy agenda",
     },
     {
-        "full_name": "Daniel Ortega",
-        "outlet": "City Herald",
-        "beat": "Investigations",
-        "location": "Chicago, IL",
-        "bio": "Investigative reporter focused on local accountability and public records.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Daniel+Ortega",
-        "article_title": "Public contracts explained",
+        "full_name": "Antony Green",
+        "outlet": "ABC News",
+        "beat": "Elections",
+        "location": "Sydney, AU",
+        "bio": "Election analyst focused on voting trends and polling interpretation.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Antony+Green",
+        "article_title": "State-by-state swing analysis ahead of federal vote",
     },
     {
-        "full_name": "Mei Lin",
-        "outlet": "Pacific Ledger",
-        "beat": "Technology",
-        "location": "San Francisco, CA",
-        "bio": "Reports on AI, privacy, and platform policy with source-first explainers.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Mei+Lin",
-        "article_title": "How states regulate AI procurement",
+        "full_name": "Kumi Taguchi",
+        "outlet": "SBS News",
+        "beat": "Society",
+        "location": "Melbourne, AU",
+        "bio": "Reports on social affairs, multicultural communities, and policy impact.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Kumi+Taguchi",
+        "article_title": "Migration reforms and what they mean for employers",
     },
     {
-        "full_name": "Jordan Price",
-        "outlet": "Metro Tribune",
-        "beat": "Education",
-        "location": "Austin, TX",
-        "bio": "Follows K-12 funding and classroom outcomes across urban districts.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Jordan+Price",
-        "article_title": "Tracking literacy gains district by district",
-    },
-    {
-        "full_name": "Elena Petrova",
-        "outlet": "World Dispatch",
-        "beat": "International",
-        "location": "Washington, DC",
-        "bio": "Analyzes diplomacy and conflict with open-source evidence and timelines.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Elena+Petrova",
-        "article_title": "Inside the latest ceasefire framework",
-    },
-    {
-        "full_name": "Noah Bennett",
-        "outlet": "Great Lakes Post",
-        "beat": "Environment",
-        "location": "Detroit, MI",
-        "bio": "Covers water quality, climate adaptation, and regional infrastructure risk.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Noah+Bennett",
-        "article_title": "Mapping flood risk across the lakeshore",
-    },
-    {
-        "full_name": "Priya Raman",
-        "outlet": "Capital Journal",
-        "beat": "Healthcare",
-        "location": "Boston, MA",
-        "bio": "Reports on hospital systems, public health metrics, and medical policy.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Priya+Raman",
-        "article_title": "Why ER wait times keep climbing",
-    },
-    {
-        "full_name": "Marcus Reed",
-        "outlet": "Southern Sentinel",
-        "beat": "Justice",
-        "location": "Atlanta, GA",
-        "bio": "Focuses on courts, prosecution data, and sentencing disparities.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Marcus+Reed",
-        "article_title": "What new bail rules changed this year",
-    },
-    {
-        "full_name": "Sofia Alvarez",
-        "outlet": "Sunline News",
-        "beat": "Housing",
-        "location": "Miami, FL",
-        "bio": "Tracks rent trends, zoning debates, and housing affordability.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Sofia+Alvarez",
-        "article_title": "Condo market correction explained",
-    },
-    {
-        "full_name": "Ethan Wallace",
-        "outlet": "Mountain Press",
-        "beat": "Energy",
-        "location": "Denver, CO",
-        "bio": "Covers utilities, transmission projects, and the economics of renewables.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Ethan+Wallace",
-        "article_title": "Can battery storage stabilize summer demand?",
-    },
-    {
-        "full_name": "Layla Hassan",
-        "outlet": "National Wire",
+        "full_name": "Shane Wright",
+        "outlet": "The Sydney Morning Herald",
         "beat": "Economy",
-        "location": "New York, NY",
-        "bio": "Explains inflation, labor data, and household economic pressures.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Layla+Hassan",
-        "article_title": "Small business hiring after rate changes",
+        "location": "Sydney, AU",
+        "bio": "Economic correspondent covering inflation, rates, and labour data.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Shane+Wright",
+        "article_title": "Reserve Bank signals caution as inflation eases",
     },
     {
-        "full_name": "Gabe Thompson",
-        "outlet": "Heartland Record",
-        "beat": "Agriculture",
-        "location": "Des Moines, IA",
-        "bio": "Reports on crop markets, farm policy, and rural broadband access.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Gabe+Thompson",
-        "article_title": "How drought planning is changing corn yields",
+        "full_name": "Nick Bonyhady",
+        "outlet": "The Age",
+        "beat": "Climate",
+        "location": "Melbourne, AU",
+        "bio": "Covers climate policy, adaptation, and environmental accountability.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Nick+Bonyhady",
+        "article_title": "Heatwave resilience plans tested across major cities",
     },
     {
-        "full_name": "Naomi Sato",
-        "outlet": "Harbor Review",
-        "beat": "Transportation",
-        "location": "Seattle, WA",
-        "bio": "Covers ports, freight bottlenecks, and major transit projects.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Naomi+Sato",
-        "article_title": "Transit reliability after schedule redesign",
+        "full_name": "Paul Karp",
+        "outlet": "The Guardian Australia",
+        "beat": "National",
+        "location": "Canberra, AU",
+        "bio": "National affairs reporter focused on transparency and governance.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Paul+Karp",
+        "article_title": "Parliament scrutiny intensifies over housing package",
     },
     {
-        "full_name": "Rafael Costa",
-        "outlet": "Desert Times",
-        "beat": "Water",
-        "location": "Phoenix, AZ",
-        "bio": "Investigates groundwater policy and long-term drought resilience.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Rafael+Costa",
-        "article_title": "Who controls groundwater in fast-growing suburbs?",
+        "full_name": "Phil Coorey",
+        "outlet": "AFR",
+        "beat": "Business",
+        "location": "Sydney, AU",
+        "bio": "Business and policy reporting focused on markets and regulation.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Phil+Coorey",
+        "article_title": "ASX firms prepare for tighter disclosure requirements",
     },
     {
-        "full_name": "Claire Dubois",
-        "outlet": "North Star News",
-        "beat": "Public Safety",
-        "location": "Minneapolis, MN",
-        "bio": "Tracks emergency response metrics and community safety initiatives.",
-        "profile_photo_url": "https://via.placeholder.com/300x200?text=Claire+Dubois",
-        "article_title": "Response-time disparities across neighborhoods",
+        "full_name": "Andrew Probyn",
+        "outlet": "9News",
+        "beat": "National",
+        "location": "Canberra, AU",
+        "bio": "Political editor reporting on federal leadership and legislation.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Andrew+Probyn",
+        "article_title": "Cabinet weighs cost-of-living relief package",
+    },
+    {
+        "full_name": "Nakia Sargeant",
+        "outlet": "7NEWS",
+        "beat": "World",
+        "location": "Sydney, AU",
+        "bio": "World news correspondent covering international affairs for Australian audiences.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Nakia+Sargeant",
+        "article_title": "Regional security talks focus on Indo-Pacific coordination",
+    },
+    {
+        "full_name": "Idrees Ali",
+        "outlet": "Reuters",
+        "beat": "International",
+        "location": "Washington, US",
+        "bio": "Covers global security and diplomacy for Reuters.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Idrees+Ali",
+        "article_title": "Global leaders seek agreement on shipping security",
+    },
+    {
+        "full_name": "Lyse Doucet",
+        "outlet": "BBC News",
+        "beat": "World",
+        "location": "London, UK",
+        "bio": "International correspondent reporting from conflict and diplomatic fronts.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Lyse+Doucet",
+        "article_title": "Diplomatic push continues amid renewed ceasefire talks",
+    },
+    {
+        "full_name": "Aamer Madhani",
+        "outlet": "Associated Press",
+        "beat": "Politics",
+        "location": "Washington, US",
+        "bio": "Covers leadership summits and international policy decisions.",
+        "profile_photo_url": "https://via.placeholder.com/300x200?text=Aamer+Madhani",
+        "article_title": "Leaders outline joint plan on energy and supply chains",
     },
 ]
+
 
 with app.app_context():
     db.create_all()
@@ -156,36 +131,36 @@ with app.app_context():
         admin = User(username='admin', email='admin@ratemynews.local', is_admin=True)
         admin.set_password('adminpass123')
         db.session.add(admin)
+        db.session.commit()
 
-    existing = {j.full_name: j for j in Journalist.query.all()}
-    created_count = 0
+    # Remove old seeded/non-mainstream content to keep the DB focused.
+    Flag.query.delete()
+    Rating.query.delete()
+    Article.query.delete()
+    Journalist.query.delete()
+    db.session.commit()
 
-    for index, payload in enumerate(JOURNALISTS, start=1):
-        journalist = existing.get(payload["full_name"])
-        if not journalist:
-            journalist = Journalist(
-                full_name=payload["full_name"],
+    for index, payload in enumerate(SEED_JOURNALISTS, start=1):
+        journalist = Journalist(
+            full_name=payload["full_name"],
+            outlet=payload["outlet"],
+            beat=payload["beat"],
+            location=payload["location"],
+            bio=payload["bio"],
+            profile_photo_url=payload["profile_photo_url"],
+        )
+        db.session.add(journalist)
+        db.session.flush()
+
+        article_url = f"https://example.com/au-world-seed-article-{index}"
+        db.session.add(
+            Article(
+                journalist_id=journalist.id,
+                title=payload["article_title"],
+                url=article_url,
                 outlet=payload["outlet"],
-                beat=payload["beat"],
-                location=payload["location"],
-                bio=payload["bio"],
-                profile_photo_url=payload["profile_photo_url"],
             )
-            db.session.add(journalist)
-            db.session.flush()
-            existing[payload["full_name"]] = journalist
-            created_count += 1
-
-        article_url = f"https://example.com/seed-article-{index}"
-        if not Article.query.filter_by(url=article_url).first():
-            db.session.add(
-                Article(
-                    journalist_id=journalist.id,
-                    title=payload["article_title"],
-                    url=article_url,
-                    outlet=payload["outlet"],
-                )
-            )
+        )
 
     db.session.commit()
-    print(f"Seed complete. Added {created_count} journalists. Total journalists: {Journalist.query.count()}.")
+    print(f"Seed complete. Inserted {len(SEED_JOURNALISTS)} mainstream AU/world journalists and matching articles.")
