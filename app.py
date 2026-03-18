@@ -3,12 +3,15 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
+import os
+import random
 import xml.etree.ElementTree as ET
 
 import requests
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-guessing-game-secret")
 
 # Free public RSS feeds (no API key required)
 FEEDS: dict[str, str] = {
@@ -16,6 +19,9 @@ FEEDS: dict[str, str] = {
     "Reuters World": "https://feeds.reuters.com/Reuters/worldNews",
     "NPR": "https://feeds.npr.org/1004/rss.xml",
 }
+
+# In-memory aggregate guessing stats shared by all visitors.
+GUESS_STATS: dict[str, dict[str, int]] = {}
 
 
 def parse_date(raw_date: str | None) -> datetime | None:
@@ -106,21 +112,87 @@ def fetch_news(selected_sources: list[str], limit: int = 30) -> list[dict[str, A
     return all_items[:limit]
 
 
-@app.route("/")
-def index() -> str:
-    selected_sources = request.args.getlist("source") or list(FEEDS.keys())
-    limit = request.args.get("limit", default=30, type=int)
-    limit = max(5, min(limit, 100))
+def _build_question(selected_sources: list[str]) -> dict[str, Any] | None:
+    """Create one guessing-game round from live headlines."""
+    usable_sources = [source for source in selected_sources if source in FEEDS]
+    if len(usable_sources) < 2:
+        usable_sources = list(FEEDS.keys())
 
-    news_items = fetch_news(selected_sources=selected_sources, limit=limit)
+    news_items = fetch_news(selected_sources=usable_sources, limit=40)
+    candidate_items = [item for item in news_items if item.get("source") in usable_sources]
+    if not candidate_items:
+        return None
+
+    chosen_item = random.choice(candidate_items)
+    return {
+        "title": chosen_item["title"],
+        "url": chosen_item["url"],
+        "published_at": chosen_item["published_at"],
+        "published_raw": chosen_item["published_raw"],
+        "correct_source": chosen_item["source"],
+        "options": sorted(usable_sources),
+    }
+
+
+def _stats_key(question: dict[str, Any]) -> str:
+    return f"{question['title']}::{question['correct_source']}"
+
+
+def _record_guess(question: dict[str, Any], selected_source: str) -> dict[str, Any]:
+    """Record a guess and return result payload for UI feedback."""
+    stats_key = _stats_key(question)
+    is_correct = selected_source == question["correct_source"]
+
+    if stats_key not in GUESS_STATS:
+        GUESS_STATS[stats_key] = {"attempts": 0, "correct": 0}
+
+    GUESS_STATS[stats_key]["attempts"] += 1
+    if is_correct:
+        GUESS_STATS[stats_key]["correct"] += 1
+
+    attempts = GUESS_STATS[stats_key]["attempts"]
+    correct = GUESS_STATS[stats_key]["correct"]
+    average_correct = round((correct / attempts) * 100, 1)
+
+    return {
+        "is_correct": is_correct,
+        "selected_source": selected_source,
+        "correct_source": question["correct_source"],
+        "average_correct": average_correct,
+        "attempts": attempts,
+    }
+
+
+@app.route("/", methods=["GET", "POST"])
+def index() -> str:
+    selected_sources = request.values.getlist("source") or list(FEEDS.keys())
+    selected_sources = [source for source in selected_sources if source in FEEDS]
+    if len(selected_sources) < 2:
+        selected_sources = list(FEEDS.keys())
+
+    feedback = None
+
+    if request.method == "GET" and request.args.get("next") == "1":
+        session.pop("current_question", None)
+
+    question = session.get("current_question")
+    if not question:
+        question = _build_question(selected_sources)
+        session["current_question"] = question
+
+    if request.method == "POST" and question:
+        picked_source = request.form.get("picked_source", "")
+        if picked_source in question["options"]:
+            feedback = _record_guess(question, picked_source)
+
     now = datetime.now(timezone.utc)
 
     return render_template(
         "index.html",
         feeds=FEEDS,
         selected_sources=selected_sources,
-        limit=limit,
-        news_items=news_items,
+        question=question,
+        feedback=feedback,
         now=now,
     )
 
