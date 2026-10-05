@@ -191,6 +191,135 @@ async function loadGlobal(showMessage){
     msg.className='status err';msg.textContent='Could not load global settings: '+e.message;
   }
 }
+
+async function rosterGet(key){
+  var r=await fetch(KEYVAL+'/get/'+encodeURIComponent(key)+'?t='+Date.now(),{method:'GET',cache:'no-store'});
+  if(!r.ok)return null;
+  var v=unwrapKeyValBody(await r.text());
+  return v||null;
+}
+async function rosterSet(key,value){
+  value=String(value);
+  var r=await fetch(KEYVAL+'/set/'+encodeURIComponent(key)+'/'+encodeURIComponent(value||'_'),{method:'GET',cache:'no-store'});
+  if(!r.ok)throw Error('Shared roster save failed (HTTP '+r.status+').');
+}
+function parseAdminMember(raw){
+  var p=String(raw||'').split('~');
+  if(p.length!==10&&p.length!==11&&p.length!==12)return null;
+  try{
+    return{
+      raw:raw,
+      rsn:decodeURIComponent(p[0]),
+      months:Math.max(0,Number(p[1])||0),
+      uim:p.length>10&&String(p[10])==='1',
+      em:p.length>11&&Number(p[11])===10?10:(p.length>11&&Number(p[11])===-10?-10:0)
+    };
+  }catch(e){return null}
+}
+function escAdmin(s){
+  return String(s).replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+function drawAdminRoster(){
+  var b=$('adminRosterBody');
+  if(!adminRoster.length){
+    b.innerHTML='<tr><td colspan="5" class="small">No clan members saved.</td></tr>';
+    return;
+  }
+  b.innerHTML=adminRoster.map(function(m,i){
+    var vibe=m.em===10?'Hates em':(m.em===-10?'Loves em':'Neither');
+    return '<tr><td><b>'+escAdmin(m.rsn)+'</b></td><td>'+m.months+'</td><td>'+(m.uim?'Yes':'No')+'</td><td>'+vibe+'</td><td><button class="danger" onclick="adminRemoveMember('+i+')">Remove</button></td></tr>';
+  }).join('');
+}
+async function loadAdminRoster(showMessage){
+  var msg=$('adminRosterStatus');
+  try{
+    var meta=await rosterGet(ROSTER_META_KEY);
+    var count=Math.max(0,parseInt(meta||'0',10)||0);
+    var list=[];
+    for(var i=0;i<count;i++){
+      var raw=await rosterGet(ROSTER_SHARD_PREFIX+i);
+      if(!raw||raw==='_')continue;
+      raw.split(';').forEach(function(rec){
+        var m=parseAdminMember(rec);
+        if(m)list.push(m);
+      });
+    }
+    var seen={};
+    adminRoster=list.filter(function(m){
+      var k=String(m.rsn||'').trim().toLowerCase();
+      if(!k||seen[k])return false;
+      seen[k]=true;
+      return true;
+    }).sort(function(a,b){return String(a.rsn).localeCompare(String(b.rsn))});
+    drawAdminRoster();
+    if(showMessage!==false){
+      msg.className='status ok';
+      msg.textContent='Loaded '+adminRoster.length+' clan members.';
+    }
+  }catch(e){
+    msg.className='status err';
+    msg.textContent='Could not load clan hiscores: '+e.message;
+  }
+}
+function packAdminRoster(){
+  var shards=[],cur='';
+  adminRoster.forEach(function(m){
+    var rec=m.raw;
+    var next=cur?cur+';'+rec:rec;
+    if(next.length<=ROSTER_SHARD_LIMIT)cur=next;
+    else{
+      if(cur)shards.push(cur);
+      cur=rec;
+    }
+  });
+  if(cur)shards.push(cur);
+  return shards;
+}
+async function saveAdminRoster(){
+  var oldCount=Math.max(0,parseInt(await rosterGet(ROSTER_META_KEY)||'0',10)||0);
+  var shards=packAdminRoster();
+  for(var i=0;i<shards.length;i++)await rosterSet(ROSTER_SHARD_PREFIX+i,shards[i]);
+  for(var j=shards.length;j<oldCount;j++)await rosterSet(ROSTER_SHARD_PREFIX+j,'_');
+  await rosterSet(ROSTER_META_KEY,String(shards.length));
+}
+window.adminRemoveMember=async function(i){
+  var m=adminRoster[i];
+  if(!m||!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
+  var msg=$('adminRosterStatus');
+  adminRoster.splice(i,1);
+  drawAdminRoster();
+  msg.className='status';
+  msg.textContent='Removing '+m.rsn+'…';
+  try{
+    await saveAdminRoster();
+    msg.className='status ok';
+    msg.textContent='Removed '+m.rsn+' globally.';
+  }catch(e){
+    msg.className='status err';
+    msg.textContent='Remove failed: '+e.message;
+    await loadAdminRoster(false);
+  }
+}
+async function clearAdminRoster(){
+  if(!confirm('Clear the GLOBAL clan hiscores for everyone?'))return;
+  var msg=$('adminRosterStatus');
+  adminRoster=[];
+  drawAdminRoster();
+  msg.className='status';
+  msg.textContent='Clearing global clan hiscores…';
+  try{
+    await saveAdminRoster();
+    msg.className='status ok';
+    msg.textContent='Global clan hiscores cleared.';
+  }catch(e){
+    msg.className='status err';
+    msg.textContent='Clear failed: '+e.message;
+    await loadAdminRoster(false);
+  }
+}
+
 async function saveGlobalSettings(){
   var btn=$('saveGlobal'),msg=$('globalConfigStatus');
   btn.disabled=true;msg.className='status';msg.textContent='Saving for everyone…';
@@ -210,6 +339,8 @@ async function saveGlobalSettings(){
 }
 $('saveGlobal').onclick=saveGlobalSettings;
 $('reloadGlobal').onclick=function(){loadGlobal(true)};
+$('reloadAdminRoster').onclick=function(){loadAdminRoster(true)};
+$('clearAdminRoster').onclick=clearAdminRoster;
 $('adminLogin').onclick=loginAdmin;
 $('adminPass').addEventListener('keydown',function(e){if(e.key==='Enter')loginAdmin()});
 $('adminUser').addEventListener('keydown',function(e){if(e.key==='Enter')$('adminPass').focus()});
