@@ -318,12 +318,9 @@ async function loadAdminRoster(showMessage){
     }).sort(function(a,b){return String(a.rsn).localeCompare(String(b.rsn))});
     drawAdminRoster();
     var recovered=adminLoadedShards.some(function(i){return i>=count})||KV_LEGACY_HIT;
-    if(recovered&&adminRoster.length){
-      try{await saveAdminRoster();KV_LEGACY_HIT=false}catch(migrateErr){}
-    }
     if(showMessage!==false){
       msg.className='status ok';
-      msg.textContent='Loaded '+adminRoster.length+' clan members.'+(recovered?' Recovered and migrated older roster data.':'');
+      msg.textContent='Loaded '+adminRoster.length+' clan members.'+(recovered?' Additional older roster shards were read without modifying them.':'');
     }
   }catch(e){
     msg.className='status err';
@@ -363,6 +360,36 @@ async function saveAdminRoster(){
   adminLoadedShards=shards.map(function(_,i){return i});
 }
 
+async function mutateMemberInStoredShards(targetRsn,replacementRaw){
+  var target=String(targetRsn||'').trim().toLowerCase();
+  if(!target)throw Error('Missing target RSN.');
+  var shards=adminLoadedShards.slice(),changed=0;
+  for(var s=0;s<shards.length;s++){
+    var shardIndex=shards[s];
+    var raw=await rosterGet(ROSTER_SHARD_PREFIX+shardIndex);
+    if(!raw||raw==='_')continue;
+    var records=String(raw).split(';'),next=[],touched=false;
+    records.forEach(function(rec){
+      var m=parseAdminMember(rec);
+      if(m&&String(m.rsn||'').trim().toLowerCase()===target){
+        touched=true;
+        if(replacementRaw)next.push(replacementRaw);
+      }else if(rec){
+        next.push(rec);
+      }
+    });
+    if(touched){
+      var newRaw=next.length?next.join(';'):'_';
+      await rosterSet(ROSTER_SHARD_PREFIX+shardIndex,newRaw);
+      var verify=await kvPrimaryGet(ROSTER_SHARD_PREFIX+shardIndex);
+      if(verify!==newRaw)throw Error('Shard '+(shardIndex+1)+' did not verify after update.');
+      changed++;
+    }
+  }
+  if(!changed)throw Error('The member record was not found in stored roster shards.');
+  return changed;
+}
+
 window.adminEditMember=async function(i){
   var m=adminRoster[i];
   if(!m)return;
@@ -387,13 +414,13 @@ window.adminEditMember=async function(i){
   p[10]=uim?'1':'0';
   p[11]=String(em);
   var updated=parseAdminMember(p.join('~'));
-  adminRoster[i]=updated;
-  drawAdminRoster();
+  var replacementRaw=updated.raw,oldRsn=m.rsn;
   var msg=$('adminRosterStatus');
   msg.className='status';msg.textContent='Saving changes to '+rsn+'…';
   try{
-    await saveAdminRoster();
-    msg.className='status ok';msg.textContent='Updated '+rsn+' globally.';
+    await mutateMemberInStoredShards(oldRsn,replacementRaw);
+    await loadAdminRoster(false);
+    msg.className='status ok';msg.textContent='Updated '+rsn+' globally without rewriting the rest of the roster.';
   }catch(e){
     msg.className='status err';msg.textContent='Edit failed: '+e.message;
     await loadAdminRoster(false);
@@ -404,20 +431,20 @@ window.adminRemoveMember=async function(i){
   var m=adminRoster[i];
   if(!m||!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
   var msg=$('adminRosterStatus');
-  adminRoster.splice(i,1);
-  drawAdminRoster();
   msg.className='status';
   msg.textContent='Removing '+m.rsn+'…';
   try{
-    await saveAdminRoster();
+    await mutateMemberInStoredShards(m.rsn,null);
+    await loadAdminRoster(false);
     msg.className='status ok';
-    msg.textContent='Removed '+m.rsn+' globally.';
+    msg.textContent='Removed '+m.rsn+' only. Other clan members were left untouched.';
   }catch(e){
     msg.className='status err';
     msg.textContent='Remove failed: '+e.message;
     await loadAdminRoster(false);
   }
 }
+
 async function clearAdminRoster(){
   if(!confirm('Clear the GLOBAL clan hiscores for everyone?'))return;
   var msg=$('adminRosterStatus');
