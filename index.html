@@ -76,22 +76,58 @@ var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
 var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
 var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
 var ROSTER_SHARD_LIMIT=280;
-var ROSTER_RECOVERY_SCAN=24,rosterLoadedShards=[];
+var ROSTER_RECOVERY_SCAN=24,rosterLoadedShards=[],KV_LEGACY_HIT=false;
 
 function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
 
-async function kvGet(key){
-  var r=await fetch(KEYVAL+'/get/'+encodeURIComponent(key)+'?t='+Date.now(),{method:'GET',cache:'no-store'});
+async function legacyKvGet(key){
+  try{
+    var r=await fetch(KEYVAL+'/get/'+encodeURIComponent(key)+'?t='+Date.now(),{method:'GET',cache:'no-store'});
+    if(!r.ok)return null;
+    var v=unwrapKeyValBody(await r.text());
+    if(v){KV_LEGACY_HIT=true;return v}
+  }catch(e){}
+  return null;
+}
+
+async function kvPrimaryGet(key){
+  var r=await fetch(KEYVAL+'/get',{
+    method:'POST',
+    cache:'no-store',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({key:key})
+  });
   if(!r.ok)return null;
   var v=unwrapKeyValBody(await r.text());
   return v||null;
 }
 
+async function kvGet(key){
+  try{
+    var primary=await kvPrimaryGet(key);
+    if(primary)return primary;
+  }catch(e){}
+  return await legacyKvGet(key);
+}
+
 async function kvSet(key,value){
   value=String(value);
   if(value.length>300)throw Error('Shared roster chunk exceeded the storage limit.');
-  var r=await fetch(KEYVAL+'/set/'+encodeURIComponent(key)+'/'+encodeURIComponent(value||'_'),{method:'GET',cache:'no-store'});
+  var r=await fetch(KEYVAL+'/set',{
+    method:'POST',
+    cache:'no-store',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({key:key,val:value||'_'})
+  });
   if(!r.ok)throw Error('Shared roster save failed (HTTP '+r.status+').');
+  var expected=value||'_';
+  var verified=null;
+  for(var attempt=0;attempt<3;attempt++){
+    if(attempt)await sleep(150);
+    verified=await kvPrimaryGet(key);
+    if(verified===expected)return;
+  }
+  throw Error('Shared roster save could not be verified. Please try again.');
 }
 
 function cleanNumber(v,d){
@@ -190,9 +226,13 @@ async function loadGlobalRoster(showMessage){
       seen[k]=true;return true;
     });
     draw();
+    var recovered=rosterLoadedShards.some(function(i){return i>=count})||KV_LEGACY_HIT;
+    if(recovered&&roster.length){
+      try{await saveGlobalRoster();KV_LEGACY_HIT=false}catch(migrateErr){}
+    }
     if(showMessage!==false){
       msg.className='status ok';
-      msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'+(rosterLoadedShards.some(function(i){return i>=count})?' Recovered roster data from older shards.':'');
+      msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'+(recovered?' Recovered and migrated older roster data.':'');
     }
     return true;
   }catch(e){
@@ -210,6 +250,12 @@ async function saveGlobalRoster(){
   rosterLoadedShards.forEach(function(i){if(i>=shards.length)stale[i]=true});
   for(var key in stale)await kvSet(ROSTER_SHARD_PREFIX+key,'_');
   await kvSet(ROSTER_META_KEY,String(shards.length));
+  var metaVerify=await kvPrimaryGet(ROSTER_META_KEY);
+  if(String(metaVerify)!==String(shards.length))throw Error('Roster save verification failed.');
+  for(var v=0;v<shards.length;v++){
+    var shardVerify=await kvPrimaryGet(ROSTER_SHARD_PREFIX+v);
+    if(shardVerify!==shards[v])throw Error('Roster shard '+(v+1)+' did not persist.');
+  }
   rosterLoadedShards=shards.map(function(_,i){return i});
 }
 
@@ -255,32 +301,14 @@ function decodeGlobalSettings(raw){
 async function writeGlobal(settings){
   var value=encodeGlobalSettings(settings);
   if(value.length>300)throw Error('Shared settings are too large.');
-  var url=KEYVAL+'/set/'+GLOBAL_KEY+'/'+encodeURIComponent(value);
-  var r=await fetch(url,{method:'GET',cache:'no-store'});
-  if(!r.ok)throw Error('Global save failed (HTTP '+r.status+').');
+  await kvSet(GLOBAL_KEY,value);
   return settings;
 }
 
 async function getGlobalSettings(){
-  var r=await fetch(KEYVAL+'/get/'+GLOBAL_KEY+'?t='+Date.now(),{method:'GET',cache:'no-store'});
-  if(!r.ok){
-    if(r.status===404){
-      await writeGlobal(def);
-      return cloneObj(def);
-    }
-    throw Error('Could not load shared settings (HTTP '+r.status+').');
-  }
-  var raw=unwrapKeyValBody(await r.text());
-  if(!raw){
-    await writeGlobal(def);
-    return cloneObj(def);
-  }
-  try{
-    return decodeGlobalSettings(raw);
-  }catch(e){
-    await writeGlobal(def);
-    return cloneObj(def);
-  }
+  var raw=await kvGet(GLOBAL_KEY);
+  if(!raw)return cloneObj(def);
+  return decodeGlobalSettings(raw);
 }
 
 async function loadGlobal(showMessage){
