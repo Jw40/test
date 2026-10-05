@@ -72,8 +72,14 @@
     <h2 style="margin:0">Clan Hiscores Admin</h2>
     <div class="small">Delete clan members here. Public hiscores stay visible without delete controls.</div>
   </div>
-  <div class="actions"><button id="reloadAdminRoster">Reload</button><button class="danger" id="clearAdminRoster">Clear all</button></div>
+  <div class="actions"><button id="exportAdminCsv">Export CSV</button><button id="reloadAdminRoster">Reload</button><button class="danger" id="clearAdminRoster">Clear all</button></div>
 </div>
+<div class="sec">Bulk import</div>
+<div class="row">
+  <input id="adminCsvFile" type="file" accept=".csv,text/csv" style="max-width:360px">
+  <button class="primary" id="importAdminCsv">Import CSV & Rank</button>
+</div>
+<div class="small" style="margin-top:7px">CSV can be usernames or include <b>RSN,Months,UIM,Vibe</b>. UIM accepts Yes/No. Vibe accepts Hates em, Loves em, or Neither.</div>
 <div id="adminRosterStatus" class="status">Loading clan members…</div>
 <div class="table"><table>
 <thead><tr><th>RSN</th><th>Months</th><th>UIM</th><th>Vibe</th><th></th></tr></thead>
@@ -83,7 +89,7 @@
 </div>
 
 <script>
-var $=function(id){return document.getElementById(id)};
+var $=function(id){return document.getElementById(id)}, WOM='https://api.wiseoldman.net/v2/players/';
 var ADMIN_USER='admin';
 var ADMIN_PASS_SHA256='0eeed4d6d7b0159be0b8de23b46aa7f74a8bee70f0f45cd9afd693ba51d4c5f1';
 
@@ -258,6 +264,13 @@ function parseAdminMember(raw){
       parts:p,
       rsn:decodeURIComponent(p[0]),
       months:Math.max(0,Number(p[1])||0),
+      ehb:Math.max(0,Number(p[2])||0),
+      clog:Math.max(0,Number(p[3])||0),
+      ks:{
+        cox:Math.max(0,Number(p[4])||0),cm:Math.max(0,Number(p[5])||0),
+        tob:Math.max(0,Number(p[6])||0),hmt:Math.max(0,Number(p[7])||0),
+        toa:Math.max(0,Number(p[8])||0),toae:Math.max(0,Number(p[9])||0)
+      },
       uim:p.length>10&&String(p[10])==='1',
       em:p.length>11&&Number(p[11])===10?10:(p.length>11&&Number(p[11])===-10?-10:0)
     };
