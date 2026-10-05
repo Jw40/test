@@ -423,6 +423,36 @@ async function fetchStats(){
   }finally{btn.disabled=false}
 }
 
+async function calculateAndRefresh(){
+  var rsn=$('rsn').value.trim();
+  var btn=$('calc');
+  if(!rsn){
+    var x=calculate();
+    $('status').className='status ok';
+    $('status').textContent='Recalculated from the current values. Score '+x.score.toFixed(1)+' · '+x.rank;
+    return;
+  }
+  btn.disabled=true;
+  $('status').className='status';
+  $('status').textContent='Loading '+rsn+' from Wise Old Man and recalculating…';
+  try{
+    var x=await fetchPlayerFast(rsn),m=playerToMember(x.data,num('months'));
+    $('rsn').value=m.rsn;
+    $('ehb').value=m.ehb;
+    $('clog').value=m.clog;
+    Object.keys(m.ks).forEach(function(k){$(k).value=m.ks[k]});
+    var result=calculate();
+    $('status').className='status ok';
+    $('status').textContent='Recalculated '+m.rsn+'. Score '+result.score.toFixed(1)+' · '+result.rank+' · HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
+  }catch(e){
+    var result=calculate();
+    $('status').className='status err';
+    $('status').textContent='WOM lookup failed, so I recalculated the current values only. '+e.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+
 async function forceRefreshStats(){
   var rsn=$('rsn').value.trim();
   if(!rsn){$('status').textContent='Enter an RSN first.';return}
@@ -533,7 +563,7 @@ async function importCsv(){
 
 $('fetch').onclick=fetchStats;
 $('forceRefresh').onclick=forceRefreshStats;
-$('calc').onclick=calculate;
+$('calc').onclick=calculateAndRefresh;
 $('saveGlobal').onclick=saveGlobalSettings;
 $('reloadGlobal').onclick=async function(){await loadGlobal(true);roster=roster.map(enrichMember);draw()};
 $('save').onclick=async function(){
