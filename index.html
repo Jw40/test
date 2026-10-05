@@ -45,7 +45,7 @@
 <section class="card" style="margin-top:18px">
 <div class="row" style="justify-content:space-between">
   <div><h2 style="margin:0">Clan Hiscores</h2><span class="small">Shared globally — everyone sees the same ranked clan roster.</span></div>
-  <div class="actions"><button id="csv">Export CSV</button><button id="reloadRoster">Reload</button><button class="danger" id="clear">Clear all</button></div>
+  <div class="actions"><button id="csv">Export CSV</button><button id="reloadRoster">Reload</button></div>
 </div>
 <div class="sec">Bulk import</div>
 <div class="row">
@@ -509,7 +509,7 @@ function draw(){
   var b=$('body');
   roster=roster.map(enrichMember).sort(function(a,b){return b.score-a.score||String(a.rsn).localeCompare(String(b.rsn))});
   if(!roster.length){b.innerHTML='<tr><td colspan="9" class="small">No clan members saved yet. Import a CSV or save a member above.</td></tr>';return}
-  b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+(i+1)+'</b></td><td><b>'+esc(m.rsn)+'</b>'+(m.uim?' <span class="pill">UIM +20</span>':'')+(m.em===10?' <span class="pill">Hates em +10</span>':(m.em===-10?' <span class="pill">Loves em -10</span>':''))+'</td><td><span class="pill">'+esc(m.rank)+'</span></td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td class="actions"><button onclick="editM('+i+')">Edit</button><button onclick="refreshM('+i+')">Refresh</button><button class="danger" onclick="removeM('+i+')">Remove</button></td></tr>'}).join('')
+  b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+(i+1)+'</b></td><td><b>'+esc(m.rsn)+'</b>'+(m.uim?' <span class="pill">UIM +20</span>':'')+(m.em===10?' <span class="pill">Hates em +10</span>':(m.em===-10?' <span class="pill">Loves em -10</span>':''))+'</td><td><span class="pill">'+esc(m.rank)+'</span></td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td class="actions"><button onclick="editM('+i+')">Edit</button><button onclick="refreshM('+i+')">Refresh</button></td></tr>'}).join('')
 }
 window.editM=function(i){var m=roster[i];edit=i;$('rsn').value=m.rsn;$('months').value=m.months;$('ehb').value=m.ehb;$('clog').value=m.clog;setUimSelected(!!m.uim);setEmModifier(m.em);Object.keys(m.ks||{}).forEach(function(k){$(k).value=m.ks[k]});calculate();scrollTo(0,0)}
 window.refreshM=async function(i){
@@ -520,12 +520,6 @@ window.refreshM=async function(i){
     upsertMember(fresh);await saveGlobalRoster();draw();
     msg.className='status ok';msg.textContent='Updated '+fresh.rsn+' in global clan hiscores.';
   }catch(e){msg.className='status err';msg.textContent='Could not refresh '+m.rsn+': '+e.message}
-}
-window.removeM=async function(i){
-  var m=roster[i];if(!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
-  roster.splice(i,1);draw();
-  try{await saveGlobalRoster();$('importStatus').className='status ok';$('importStatus').textContent='Removed '+m.rsn+' globally.'}
-  catch(e){$('importStatus').className='status err';$('importStatus').textContent='Remove failed: '+e.message}
 }
 
 function parseCsv(text){
@@ -622,12 +616,6 @@ $('save').onclick=async function(){
   catch(e){msg.className='status err';msg.textContent='Save failed: '+e.message}
 };
 $('reset').onclick=function(){location.reload()};
-$('clear').onclick=async function(){
-  if(!confirm('Clear the GLOBAL clan hiscores for everyone?'))return;
-  roster=[];draw();$('importStatus').className='status';$('importStatus').textContent='Clearing global clan hiscores…';
-  try{await saveGlobalRoster();$('importStatus').className='status ok';$('importStatus').textContent='Global clan hiscores cleared.'}
-  catch(e){$('importStatus').className='status err';$('importStatus').textContent='Clear failed: '+e.message}
-};
 $('reloadRoster').onclick=function(){loadGlobalRoster(true)};
 $('importCsv').onclick=importCsv;
 $('csv').onclick=function(){
