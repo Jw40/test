@@ -105,7 +105,7 @@ function showAdmin(){
   $('loginView').classList.add('hidden');
   $('adminPanel').classList.remove('hidden');
   loadGlobal(false);
-  loadAdminRoster(false);
+  loadAdminRoster(false).then(checkBrowserRosterBackup);
 }
 async function loginAdmin(){
   var user=$('adminUser').value.trim();
@@ -132,6 +132,7 @@ var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
 var ROSTER_SHARD_LIMIT=90;
 var ROSTER_RECOVERY_SCAN=120,adminLoadedShards=[],KV_LEGACY_HIT=false;
 var adminRoster=[];
+var browserBackupMissing=[];
 
 function cloneObj(o){return JSON.parse(JSON.stringify(o))}
 function num(id){return Math.max(0,Number($(id).value||0))}
@@ -430,6 +431,111 @@ window.adminEditMember=async function(i){
   }
 }
 
+
+function backupObjectToAdminMember(m){
+  if(!m||!m.rsn)return null;
+  var k=m.ks||{};
+  var raw=[
+    encodeURIComponent(String(m.rsn).trim()),
+    Math.max(0,Number(m.months)||0),
+    Math.round(Math.max(0,Number(m.ehb)||0)*100)/100,
+    Math.round(Math.max(0,Number(m.clog)||0)),
+    Math.round(Math.max(0,Number(k.cox)||0)),
+    Math.round(Math.max(0,Number(k.cm)||0)),
+    Math.round(Math.max(0,Number(k.tob)||0)),
+    Math.round(Math.max(0,Number(k.hmt)||0)),
+    Math.round(Math.max(0,Number(k.toa)||0)),
+    Math.round(Math.max(0,Number(k.toae)||0)),
+    m.uim?1:0,
+    m.em===10?10:(m.em===-10?-10:0)
+  ].join('~');
+  if(raw.length>ROSTER_SHARD_LIMIT)return null;
+  return parseAdminMember(raw);
+}
+
+function checkBrowserRosterBackup(){
+  var msg=$('backupRecovery'),btn=$('recoverBrowserBackup'),names=$('backupRecoveryNames');
+  browserBackupMissing=[];
+  btn.classList.add('hidden');
+  names.textContent='';
+  try{
+    var raw=localStorage.getItem('rankRosterBackupV2')||localStorage.getItem('rankRoster');
+    if(!raw){
+      msg.className='status';
+      msg.textContent='No older browser roster backup found on this device.';
+      return;
+    }
+    var arr=JSON.parse(raw);
+    if(!Array.isArray(arr)||!arr.length){
+      msg.className='status';
+      msg.textContent='Browser roster backup is empty.';
+      return;
+    }
+    var current={};
+    adminRoster.forEach(function(m){current[String(m.rsn||'').trim().toLowerCase()]=true});
+    var seen={};
+    arr.forEach(function(obj){
+      var m=backupObjectToAdminMember(obj);
+      if(!m)return;
+      var key=String(m.rsn||'').trim().toLowerCase();
+      if(!key||current[key]||seen[key])return;
+      seen[key]=true;
+      browserBackupMissing.push(m);
+    });
+    if(browserBackupMissing.length){
+      msg.className='status ok';
+      msg.textContent='Found '+browserBackupMissing.length+' missing member'+(browserBackupMissing.length===1?'':'s')+' in this browser backup.';
+      names.textContent=browserBackupMissing.map(function(m){return m.rsn}).join(', ');
+      btn.classList.remove('hidden');
+    }else{
+      msg.className='status';
+      msg.textContent='Browser backup found, but it contains no members missing from the current roster.';
+    }
+  }catch(e){
+    msg.className='status err';
+    msg.textContent='Could not read browser roster backup: '+e.message;
+  }
+}
+
+async function restoreBrowserRosterBackup(){
+  if(!browserBackupMissing.length)return;
+  if(!confirm('Restore '+browserBackupMissing.length+' missing member'+(browserBackupMissing.length===1?'':'s')+' from the browser backup?'))return;
+  var msg=$('backupRecovery'),btn=$('recoverBrowserBackup');
+  btn.disabled=true;
+  msg.className='status';
+  msg.textContent='Restoring missing members without rewriting the current roster…';
+  try{
+    var used={};
+    adminLoadedShards.forEach(function(i){used[i]=true});
+    var maxUsed=adminLoadedShards.length?Math.max.apply(null,adminLoadedShards):-1;
+    var next=Math.max(0,maxUsed+1),highest=maxUsed;
+    for(var i=0;i<browserBackupMissing.length;i++){
+      while(used[next]&&next<ROSTER_RECOVERY_SCAN)next++;
+      if(next>=ROSTER_RECOVERY_SCAN)throw Error('No free recovery shard available.');
+      var rec=browserBackupMissing[i].raw;
+      await rosterSet(ROSTER_SHARD_PREFIX+next,rec);
+      var verify=await kvPrimaryGet(ROSTER_SHARD_PREFIX+next);
+      if(verify!==rec)throw Error('Recovered shard '+(next+1)+' did not verify.');
+      used[next]=true;
+      highest=Math.max(highest,next);
+      next++;
+    }
+    var meta=Math.max(0,parseInt(await rosterGet(ROSTER_META_KEY)||'0',10)||0);
+    if(highest+1>meta)await rosterSet(ROSTER_META_KEY,String(highest+1));
+    await loadAdminRoster(false);
+    msg.className='status ok';
+    msg.textContent='Recovered '+browserBackupMissing.length+' missing member'+(browserBackupMissing.length===1?'':'s')+' from the browser backup.';
+    browserBackupMissing=[];
+    btn.classList.add('hidden');
+    $('backupRecoveryNames').textContent='';
+  }catch(e){
+    msg.className='status err';
+    msg.textContent='Recovery failed: '+e.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+
 window.adminRemoveMember=async function(i){
   var m=adminRoster[i];
   if(!m||!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
@@ -611,10 +717,11 @@ async function saveGlobalSettings(){
 }
 $('saveGlobal').onclick=saveGlobalSettings;
 $('reloadGlobal').onclick=function(){loadGlobal(true)};
-$('reloadAdminRoster').onclick=function(){loadAdminRoster(true)};
+$('reloadAdminRoster').onclick=function(){loadAdminRoster(true).then(checkBrowserRosterBackup)};
 $('clearAdminRoster').onclick=clearAdminRoster;
 $('importAdminCsv').onclick=importAdminCsv;
 $('exportAdminCsv').onclick=exportAdminCsv;
+$('recoverBrowserBackup').onclick=restoreBrowserRosterBackup;
 $('adminLogin').onclick=loginAdmin;
 $('adminPass').addEventListener('keydown',function(e){if(e.key==='Enter')loginAdmin()});
 $('adminUser').addEventListener('keydown',function(e){if(e.key==='Enter')$('adminPass').focus()});
