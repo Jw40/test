@@ -8,11 +8,25 @@
 <meta http-equiv="Expires" content="0">
 <title>DIY Rank Admin</title>
 <style>
-:root{--bg:#0d1014;--p:#171b22;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:820px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:36px}.sub,.small{color:var(--m)}.card{margin-top:22px;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}input[readonly]{opacity:.7;cursor:not-allowed}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.back{display:inline-block;margin-top:10px;color:var(--a);font-weight:800;text-decoration:none}.back:hover{text-decoration:underline}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
+:root{--bg:#0d1014;--p:#171b22;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:820px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:36px}.sub,.small{color:var(--m)}.card{margin-top:22px;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}input[readonly]{opacity:.7;cursor:not-allowed}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.back{display:inline-block;margin-top:10px;color:var(--a);font-weight:800;text-decoration:none}.back:hover{text-decoration:underline}.loginCard{max-width:420px;margin:60px auto 0;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:22px}.loginCard h2{margin-top:0}.loginError{color:var(--r);font-size:12px;min-height:18px;margin-top:8px}.hidden{display:none!important}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="w">
+<div id="loginView" class="w">
+  <div class="loginCard">
+    <h2>Admin Login</h2>
+    <div class="small">Sign in to manage calculator settings.</div>
+    <label>Username</label>
+    <input id="adminUser" autocomplete="username">
+    <label>Password</label>
+    <input id="adminPass" type="password" autocomplete="current-password">
+    <div class="row"><button class="primary" id="adminLogin">Login</button></div>
+    <div id="loginError" class="loginError"></div>
+    <a class="back" href="index.html">← Back to calculator</a>
+  </div>
+</div>
+
+<div id="adminPanel" class="w hidden">
 <h1>DIY Rank Admin</h1>
 <div class="sub">Global calculator settings. Changes here affect everyone using the calculator.</div>
 <a class="back" href="index.html">← Back to calculator</a>
@@ -55,6 +69,33 @@
 
 <script>
 var $=function(id){return document.getElementById(id)};
+var ADMIN_USER='admin';
+var ADMIN_PASS_SHA256='0eeed4d6d7b0159be0b8de23b46aa7f74a8bee70f0f45cd9afd693ba51d4c5f1';
+
+async function sha256Hex(value){
+  var data=new TextEncoder().encode(value);
+  var hash=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+}
+function showAdmin(){
+  $('loginView').classList.add('hidden');
+  $('adminPanel').classList.remove('hidden');
+  loadGlobal(false);
+}
+async function loginAdmin(){
+  var user=$('adminUser').value.trim();
+  var pass=$('adminPass').value;
+  var hash=await sha256Hex(pass);
+  if(user===ADMIN_USER&&hash===ADMIN_PASS_SHA256){
+    sessionStorage.setItem('diyrankAdminAuth','1');
+    $('loginError').textContent='';
+    showAdmin();
+  }else{
+    $('loginError').textContent='Incorrect username or password.';
+    $('adminPass').value='';
+    $('adminPass').focus();
+  }
+}
 var def={wEhb:45,wClog:25,wRaid:30,capEhb:1000,capClog:1000,capRaid:1000,tenureCap:72,tenureBonus:35,ranks:[['Bronze Scim',0],['Iron Scim',20],['Steel Scim',40],['Mith Scim',60],['Addy Scim',80],['Rune Scim',100],['Dragon Scim',115]]};
 var set=JSON.parse(JSON.stringify(def));
 var GLOBAL_KEY='jw40-osrs-clan-ranks-global-v2-20261005';
@@ -149,7 +190,10 @@ async function saveGlobalSettings(){
 }
 $('saveGlobal').onclick=saveGlobalSettings;
 $('reloadGlobal').onclick=function(){loadGlobal(true)};
-loadGlobal(false);
+$('adminLogin').onclick=loginAdmin;
+$('adminPass').addEventListener('keydown',function(e){if(e.key==='Enter')loginAdmin()});
+$('adminUser').addEventListener('keydown',function(e){if(e.key==='Enter')$('adminPass').focus()});
+if(sessionStorage.getItem('diyrankAdminAuth')==='1')showAdmin();
 </script>
 </body>
 </html>
