@@ -121,6 +121,7 @@ var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
 var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
 var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
 var ROSTER_SHARD_LIMIT=280;
+var ROSTER_RECOVERY_SCAN=24,adminLoadedShards=[];
 var adminRoster=[];
 
 function cloneObj(o){return JSON.parse(JSON.stringify(o))}
@@ -209,6 +210,7 @@ function parseAdminMember(raw){
   try{
     return{
       raw:raw,
+      parts:p,
       rsn:decodeURIComponent(p[0]),
       months:Math.max(0,Number(p[1])||0),
       uim:p.length>10&&String(p[10])==='1',
@@ -229,7 +231,7 @@ function drawAdminRoster(){
   }
   b.innerHTML=adminRoster.map(function(m,i){
     var vibe=m.em===10?'Hates em':(m.em===-10?'Loves em':'Neither');
-    return '<tr><td><b>'+escAdmin(m.rsn)+'</b></td><td>'+m.months+'</td><td>'+(m.uim?'Yes':'No')+'</td><td>'+vibe+'</td><td><button class="danger" onclick="adminRemoveMember('+i+')">Remove</button></td></tr>';
+    return '<tr><td><b>'+escAdmin(m.rsn)+'</b></td><td>'+m.months+'</td><td>'+(m.uim?'Yes':'No')+'</td><td>'+vibe+'</td><td class="actions"><button onclick="adminEditMember('+i+')">Edit</button><button class="danger" onclick="adminRemoveMember('+i+')">Remove</button></td></tr>';
   }).join('');
 }
 async function loadAdminRoster(showMessage){
@@ -237,15 +239,18 @@ async function loadAdminRoster(showMessage){
   try{
     var meta=await rosterGet(ROSTER_META_KEY);
     var count=Math.max(0,parseInt(meta||'0',10)||0);
-    var list=[];
-    for(var i=0;i<count;i++){
-      var raw=await rosterGet(ROSTER_SHARD_PREFIX+i);
-      if(!raw||raw==='_')continue;
+    var scanCount=Math.max(count,ROSTER_RECOVERY_SCAN),jobs=[],list=[];
+    for(var i=0;i<scanCount;i++)jobs.push(rosterGet(ROSTER_SHARD_PREFIX+i));
+    var raws=await Promise.all(jobs);
+    adminLoadedShards=[];
+    raws.forEach(function(raw,i){
+      if(!raw||raw==='_')return;
+      adminLoadedShards.push(i);
       raw.split(';').forEach(function(rec){
         var m=parseAdminMember(rec);
         if(m)list.push(m);
       });
-    }
+    });
     var seen={};
     adminRoster=list.filter(function(m){
       var k=String(m.rsn||'').trim().toLowerCase();
@@ -256,7 +261,7 @@ async function loadAdminRoster(showMessage){
     drawAdminRoster();
     if(showMessage!==false){
       msg.className='status ok';
-      msg.textContent='Loaded '+adminRoster.length+' clan members.';
+      msg.textContent='Loaded '+adminRoster.length+' clan members.'+(adminLoadedShards.some(function(i){return i>=count})?' Recovered roster data from older shards.':'');
     }
   }catch(e){
     msg.className='status err';
@@ -281,9 +286,51 @@ async function saveAdminRoster(){
   var oldCount=Math.max(0,parseInt(await rosterGet(ROSTER_META_KEY)||'0',10)||0);
   var shards=packAdminRoster();
   for(var i=0;i<shards.length;i++)await rosterSet(ROSTER_SHARD_PREFIX+i,shards[i]);
-  for(var j=shards.length;j<oldCount;j++)await rosterSet(ROSTER_SHARD_PREFIX+j,'_');
+  var stale={};
+  for(var j=shards.length;j<oldCount;j++)stale[j]=true;
+  adminLoadedShards.forEach(function(i){if(i>=shards.length)stale[i]=true});
+  for(var key in stale)await rosterSet(ROSTER_SHARD_PREFIX+key,'_');
   await rosterSet(ROSTER_META_KEY,String(shards.length));
+  adminLoadedShards=shards.map(function(_,i){return i});
 }
+
+window.adminEditMember=async function(i){
+  var m=adminRoster[i];
+  if(!m)return;
+  var rsn=prompt('RSN',m.rsn);
+  if(rsn===null)return;
+  rsn=String(rsn).trim();
+  if(!rsn){alert('RSN cannot be empty.');return}
+  var monthsRaw=prompt('Months in clan',String(m.months));
+  if(monthsRaw===null)return;
+  var months=Math.max(0,Number(monthsRaw)||0);
+  var uimRaw=prompt('UIM? Enter Yes or No',m.uim?'Yes':'No');
+  if(uimRaw===null)return;
+  var uim=/^(y|yes|true|1|uim)$/i.test(String(uimRaw).trim());
+  var vibeRaw=prompt('Vibe: Hates em, Loves em, or Neither',m.em===10?'Hates em':(m.em===-10?'Loves em':'Neither'));
+  if(vibeRaw===null)return;
+  var vibeText=String(vibeRaw).trim().toLowerCase();
+  var em=vibeText==='hates em'||vibeText==='hates'||vibeText==='10'||vibeText==='+10'?10:(vibeText==='loves em'||vibeText==='loves'||vibeText==='-10'?-10:0);
+  var p=m.parts.slice();
+  while(p.length<12)p.push('0');
+  p[0]=encodeURIComponent(rsn);
+  p[1]=String(months);
+  p[10]=uim?'1':'0';
+  p[11]=String(em);
+  var updated=parseAdminMember(p.join('~'));
+  adminRoster[i]=updated;
+  drawAdminRoster();
+  var msg=$('adminRosterStatus');
+  msg.className='status';msg.textContent='Saving changes to '+rsn+'…';
+  try{
+    await saveAdminRoster();
+    msg.className='status ok';msg.textContent='Updated '+rsn+' globally.';
+  }catch(e){
+    msg.className='status err';msg.textContent='Edit failed: '+e.message;
+    await loadAdminRoster(false);
+  }
+}
+
 window.adminRemoveMember=async function(i){
   var m=adminRoster[i];
   if(!m||!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
