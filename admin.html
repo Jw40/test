@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>DIY Rank Admin</title>
 <style>
-:root{--bg:#0d1014;--p:#171b22;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:820px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:36px}.sub,.small{color:var(--m)}.card{margin-top:22px;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}input[readonly]{opacity:.7;cursor:not-allowed}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.back{display:inline-block;margin-top:10px;color:var(--a);font-weight:800;text-decoration:none}.back:hover{text-decoration:underline}.loginCard{max-width:420px;margin:60px auto 0;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:22px}.loginCard h2{margin-top:0}.loginError{color:var(--r);font-size:12px;min-height:18px;margin-top:8px}.hidden{display:none!important}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
+:root{--bg:#0d1014;--p:#171b22;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:820px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:36px}.sub,.small{color:var(--m)}.card{margin-top:22px;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}input[readonly]{opacity:.7;cursor:not-allowed}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.back{display:inline-block;margin-top:10px;color:var(--a);font-weight:800;text-decoration:none}.back:hover{text-decoration:underline}.loginCard{max-width:420px;margin:60px auto 0;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:22px}.loginCard h2{margin-top:0}.loginError{color:var(--r);font-size:12px;min-height:18px;margin-top:8px}.hidden{display:none!important}.table{margin-top:14px;overflow:auto}.table table{width:100%;border-collapse:collapse;min-width:620px}.table th,.table td{padding:10px;border-bottom:1px solid var(--l);text-align:left;font-size:13px}.danger{background:#3b1b1d;color:#ffc2c0}.actions{display:flex;gap:8px}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -64,6 +64,21 @@
   <button id="reloadGlobal">Reload Global</button>
 </div>
 <div id="globalConfigStatus" class="status">Loading global clan settings…</div>
+</section>
+
+<section class="card">
+<div class="row" style="justify-content:space-between">
+  <div>
+    <h2 style="margin:0">Clan Hiscores Admin</h2>
+    <div class="small">Delete clan members here. Public hiscores stay visible without delete controls.</div>
+  </div>
+  <div class="actions"><button id="reloadAdminRoster">Reload</button><button class="danger" id="clearAdminRoster">Clear all</button></div>
+</div>
+<div id="adminRosterStatus" class="status">Loading clan members…</div>
+<div class="table"><table>
+<thead><tr><th>RSN</th><th>Months</th><th>UIM</th><th>Vibe</th><th></th></tr></thead>
+<tbody id="adminRosterBody"></tbody>
+</table></div>
 </section>
 </div>
 
