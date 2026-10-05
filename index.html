@@ -62,33 +62,58 @@ function loadSet(){['wEhb','wClog','wRaid','capEhb','capClog','capRaid','tenureC
 function readSet(){['wEhb','wClog','wRaid','capEhb','capClog','capRaid','tenureCap','tenureBonus'].forEach(function(k){set[k]=num(k)});document.querySelectorAll('[data-r]').forEach(function(x){set.ranks[Number(x.dataset.r)][1]=Number(x.value||0)})}
 
 function cloneObj(o){return JSON.parse(JSON.stringify(o))}
-var GLOBAL_KEY='jw40-osrs-clan-ranks-global-20261005';
+var GLOBAL_KEY='jw40-osrs-clan-ranks-global-v2-20261005';
 var KEYVAL='https://api.keyval.org';
-function compactSettings(o){return JSON.stringify(o)}
+var RANK_NAMES=['Bronze Scim','Iron Scim','Steel Scim','Mith Scim','Addy Scim','Rune Scim','Dragon Scim'];
+
+function encodeGlobalSettings(o){
+  var vals=[
+    o.wEhb,o.wClog,o.wRaid,
+    o.capEhb,o.capClog,o.capRaid,
+    o.tenureCap,o.tenureBonus
+  ];
+  o.ranks.forEach(function(r){vals.push(r[1])});
+  return vals.join(',');
+}
+
+function unwrapKeyValBody(raw){
+  raw=String(raw||'').trim();
+  if(!raw)return '';
+  if(raw.charAt(0)==='"'){
+    try{return String(JSON.parse(raw)||'').trim()}catch(e){}
+  }
+  if(raw.charAt(0)==='{'){
+    try{
+      var obj=JSON.parse(raw);
+      if(obj&&obj.value!==undefined)return String(obj.value||'').trim();
+      if(obj&&obj.val!==undefined)return String(obj.val||'').trim();
+    }catch(e){}
+  }
+  return raw;
+}
+
+function decodeGlobalSettings(raw){
+  raw=unwrapKeyValBody(raw);
+  var parts=raw.split(',');
+  if(parts.length!==15)throw Error('Shared settings had the wrong number of values.');
+  var vals=parts.map(function(v){var n=Number(v);if(!Number.isFinite(n))throw Error('Shared settings contained an invalid number.');return n});
+  return {
+    wEhb:vals[0],wClog:vals[1],wRaid:vals[2],
+    capEhb:vals[3],capClog:vals[4],capRaid:vals[5],
+    tenureCap:vals[6],tenureBonus:vals[7],
+    ranks:RANK_NAMES.map(function(name,i){return[name,vals[8+i]]})
+  };
+}
+
 async function writeGlobal(settings){
-  var raw=compactSettings(settings);
-  if(raw.length>300)throw Error('Global settings are too large for the shared store ('+raw.length+'/300 characters).');
-  var url=KEYVAL+'/set/'+GLOBAL_KEY+'/'+encodeURIComponent(raw);
+  var value=encodeGlobalSettings(settings);
+  if(value.length>300)throw Error('Shared settings are too large.');
+  var url=KEYVAL+'/set/'+GLOBAL_KEY+'/'+encodeURIComponent(value);
   var r=await fetch(url,{method:'GET',cache:'no-store'});
   if(!r.ok)throw Error('Global save failed (HTTP '+r.status+').');
   return settings;
 }
-function normaliseStoredSettings(raw){
-  var parsed=raw;
-  if(typeof parsed==='string'){
-    var t=parsed.trim();
-    if(!t)throw Error('Shared settings store returned an empty value.');
-    parsed=JSON.parse(t);
-  }
-  if(typeof parsed==='string')parsed=JSON.parse(parsed);
-  if(parsed&&typeof parsed==='object'){
-    if(parsed.value!==undefined)parsed=parsed.value;
-    else if(parsed.val!==undefined)parsed=parsed.val;
-  }
-  if(typeof parsed==='string')parsed=JSON.parse(parsed);
-  if(!parsed||!Array.isArray(parsed.ranks))throw Error('Shared settings store returned an invalid config.');
-  return parsed;
-}
+
 async function getGlobalSettings(){
   var r=await fetch(KEYVAL+'/get/'+GLOBAL_KEY+'?t='+Date.now(),{method:'GET',cache:'no-store'});
   if(!r.ok){
@@ -98,13 +123,19 @@ async function getGlobalSettings(){
     }
     throw Error('Could not load shared settings (HTTP '+r.status+').');
   }
-  var raw=(await r.text()).trim();
+  var raw=unwrapKeyValBody(await r.text());
   if(!raw){
     await writeGlobal(def);
     return cloneObj(def);
   }
-  return normaliseStoredSettings(raw);
+  try{
+    return decodeGlobalSettings(raw);
+  }catch(e){
+    await writeGlobal(def);
+    return cloneObj(def);
+  }
 }
+
 async function loadGlobal(showMessage){
   var msg=$('globalConfigStatus');
   try{
@@ -121,6 +152,7 @@ async function loadGlobal(showMessage){
     return false;
   }
 }
+
 async function saveGlobalSettings(){
   var btn=$('saveGlobal'),msg=$('globalConfigStatus');
   btn.disabled=true;msg.className='status';msg.textContent='Saving for everyone…';
@@ -129,13 +161,18 @@ async function saveGlobalSettings(){
     var total=set.wEhb+set.wClog+set.wRaid;
     if(total!==100)throw Error('EHB + CLog + Raid weights must add up to 100. They currently add to '+total+'.');
     await writeGlobal(set);
-    def=cloneObj(set);
+    var verify=await getGlobalSettings();
+    set=cloneObj(verify);
+    def=cloneObj(verify);
+    loadSet();
+    calculate();
     msg.className='status ok';
-    msg.textContent='Saved globally. Everyone opening or refreshing the site now gets these values.';
+    msg.textContent='Saved and verified globally. Refreshing the page will keep these values.';
   }catch(e){
     msg.className='status err';msg.textContent=e.message;
   }finally{btn.disabled=false}
 }
+
 async function initApp(){
   localStorage.removeItem('rankSet');
   localStorage.removeItem('rankConfigVersion');
