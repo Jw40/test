@@ -73,17 +73,37 @@ async function writeGlobal(settings){
   if(!r.ok)throw Error('Global save failed (HTTP '+r.status+').');
   return settings;
 }
+function normaliseStoredSettings(raw){
+  var parsed=raw;
+  if(typeof parsed==='string'){
+    var t=parsed.trim();
+    if(!t)throw Error('Shared settings store returned an empty value.');
+    parsed=JSON.parse(t);
+  }
+  if(typeof parsed==='string')parsed=JSON.parse(parsed);
+  if(parsed&&typeof parsed==='object'){
+    if(parsed.value!==undefined)parsed=parsed.value;
+    else if(parsed.val!==undefined)parsed=parsed.val;
+  }
+  if(typeof parsed==='string')parsed=JSON.parse(parsed);
+  if(!parsed||!Array.isArray(parsed.ranks))throw Error('Shared settings store returned an invalid config.');
+  return parsed;
+}
 async function getGlobalSettings(){
   var r=await fetch(KEYVAL+'/get/'+GLOBAL_KEY+'?t='+Date.now(),{method:'GET',cache:'no-store'});
-  if(r.ok){
-    var raw=(await r.text()).trim();
-    if(raw){
-      var parsed=JSON.parse(raw);
-      if(parsed&&Array.isArray(parsed.ranks))return parsed;
+  if(!r.ok){
+    if(r.status===404){
+      await writeGlobal(def);
+      return cloneObj(def);
     }
+    throw Error('Could not load shared settings (HTTP '+r.status+').');
   }
-  await writeGlobal(def);
-  return cloneObj(def);
+  var raw=(await r.text()).trim();
+  if(!raw){
+    await writeGlobal(def);
+    return cloneObj(def);
+  }
+  return normaliseStoredSettings(raw);
 }
 async function loadGlobal(showMessage){
   var msg=$('globalConfigStatus');
