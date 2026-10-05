@@ -16,7 +16,7 @@
 <section class="card">
 <h2>Member</h2>
 <div class="fields"><div><label>RSN</label><input id="rsn" placeholder="e.g. Zezima"></div><div><label>Months in clan</label><input id="months" type="number" min="0" value="6"></div></div>
-<div class="row"><button class="primary" id="fetch">Refresh & fetch RSN stats</button></div>
+<div class="row"><button class="primary" id="fetch">Fetch RSN stats</button><button id="forceRefresh">Refresh from Hiscores</button></div><div class="small" style="margin-top:7px">Fetch uses Wise Old Man saved data (fast). Refresh from Hiscores asks WOM/Jagex for a fresh update (slower).</div>
 <div id="status" class="status">Ready.</div>
 <div class="sec">Progression</div>
 <div class="fields"><div><label>EHB</label><input id="ehb" type="number" min="0" value="250"></div><div><label>Collection Log slots</label><input id="clog" type="number" min="0" value="600"></div></div>
@@ -376,6 +376,13 @@ async function fetchPlayerFresh(rsn){
   return{data:x.data,fresh:fresh};
 }
 
+async function fetchPlayerFast(rsn){
+  var x=await call(rsn,'GET');
+  if(x.res.status===404)x=await call(rsn,'POST');
+  if(!x.res.ok)throw Error((x.data&&(x.data.message||x.data.error))||('HTTP '+x.res.status));
+  return{data:x.data,fresh:false};
+}
+
 function playerToMember(p,months){
   var s=p.latestSnapshot&&p.latestSnapshot.data;
   if(!s)throw Error('WOM returned no latest snapshot');
@@ -403,16 +410,32 @@ function playerToMember(p,months){
 async function fetchStats(){
   var rsn=$('rsn').value.trim();
   if(!rsn){$('status').textContent='Enter an RSN first.';return}
-  var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Refreshing from Wise Old Man…';
+  var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Loading from Wise Old Man…';
+  try{
+    var x=await fetchPlayerFast(rsn),m=playerToMember(x.data,num('months'));
+    $('rsn').value=m.rsn;$('ehb').value=m.ehb;$('clog').value=m.clog;
+    Object.keys(m.ks).forEach(function(k){$(k).value=m.ks[k]});
+    calculate();
+    $('status').className='status ok';
+    $('status').textContent='Loaded '+m.rsn+' from WOM. HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
+  }catch(e){
+    $('status').className='status err';$('status').textContent='Lookup failed: '+e.message
+  }finally{btn.disabled=false}
+}
+
+async function forceRefreshStats(){
+  var rsn=$('rsn').value.trim();
+  if(!rsn){$('status').textContent='Enter an RSN first.';return}
+  var btn=$('forceRefresh');btn.disabled=true;$('status').className='status';$('status').textContent='Refreshing from Jagex via Wise Old Man…';
   try{
     var x=await fetchPlayerFresh(rsn),m=playerToMember(x.data,num('months'));
     $('rsn').value=m.rsn;$('ehb').value=m.ehb;$('clog').value=m.clog;
     Object.keys(m.ks).forEach(function(k){$(k).value=m.ks[k]});
     calculate();
     $('status').className='status ok';
-    $('status').textContent=(x.fresh?'Refreshed':'Loaded cached WOM data for')+' '+m.rsn+'. HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
+    $('status').textContent='Fresh update loaded for '+m.rsn+'. HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
   }catch(e){
-    $('status').className='status err';$('status').textContent='Lookup failed: '+e.message
+    $('status').className='status err';$('status').textContent='Refresh failed: '+e.message
   }finally{btn.disabled=false}
 }
 function member(){return enrichMember({rsn:$('rsn').value.trim()||'Unnamed',months:num('months'),ehb:num('ehb'),clog:num('clog'),ks:{cox:num('cox'),cm:num('cm'),tob:num('tob'),hmt:num('hmt'),toa:num('toa'),toae:num('toae')}})}
@@ -493,7 +516,7 @@ async function importCsv(){
       var e=entries[i],existing=roster.find(function(x){return String(x.rsn).toLowerCase()===e.rsn.toLowerCase()}),months=e.months===null?(existing?existing.months:0):e.months;
       msg.className='status';msg.textContent='Ranking '+(i+1)+'/'+entries.length+': '+e.rsn+'…';
       try{
-        var x=await fetchPlayerFresh(e.rsn),m=playerToMember(x.data,months);
+        var x=await fetchPlayerFast(e.rsn),m=playerToMember(x.data,months);
         upsertMember(m);draw();
       }catch(err){failures.push(e.rsn+' ('+err.message+')')}
       if(i<entries.length-1)await sleep(250);
@@ -509,6 +532,7 @@ async function importCsv(){
 }
 
 $('fetch').onclick=fetchStats;
+$('forceRefresh').onclick=forceRefreshStats;
 $('calc').onclick=calculate;
 $('saveGlobal').onclick=saveGlobalSettings;
 $('reloadGlobal').onclick=async function(){await loadGlobal(true);roster=roster.map(enrichMember);draw()};
