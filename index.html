@@ -45,14 +45,8 @@
 <section class="card" style="margin-top:18px">
 <div class="row" style="justify-content:space-between">
   <div><h2 style="margin:0">Clan Hiscores</h2><span class="small">Shared globally — everyone sees the same ranked clan roster.</span></div>
-  <div class="actions"><button id="csv">Export CSV</button><button id="reloadRoster">Reload</button></div>
+  <div class="actions"><button id="reloadRoster">Reload</button></div>
 </div>
-<div class="sec">Bulk import</div>
-<div class="row">
-  <input id="csvFile" type="file" accept=".csv,text/csv" style="max-width:360px">
-  <button class="primary" id="importCsv">Import CSV & Rank</button>
-</div>
-<div class="small" style="margin-top:7px">CSV can be usernames or include <b>RSN,Months,UIM,Vibe</b>. UIM accepts Yes/No. Vibe accepts Hates em, Loves em, or Neither.</div>
 <div id="importStatus" class="status">Global clan roster ready.</div>
 <div class="table"><table><thead><tr><th>#</th><th>RSN</th><th>Rank</th><th>Score</th><th>Months</th><th>EHB</th><th>CLog</th><th>Raid</th><th></th></tr></thead><tbody id="body"></tbody></table></div>
 </section>
@@ -582,86 +576,6 @@ window.refreshM=async function(i){
   }catch(e){msg.className='status err';msg.textContent='Could not refresh '+m.rsn+': '+e.message}
 }
 
-function parseCsv(text){
-  var rows=[],row=[],cell='',quoted=false;
-  for(var i=0;i<text.length;i++){
-    var ch=text[i],next=text[i+1];
-    if(quoted){
-      if(ch==='"'&&next==='"'){cell+='"';i++}
-      else if(ch==='"')quoted=false;
-      else cell+=ch;
-    }else{
-      if(ch==='"')quoted=true;
-      else if(ch===','){row.push(cell);cell=''}
-      else if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell=''}
-      else if(ch!=='\r')cell+=ch;
-    }
-  }
-  if(cell!==''||row.length){row.push(cell);rows.push(row)}
-  return rows.filter(function(r){return r.some(function(x){return String(x).trim()})});
-}
-
-function csvMembers(text){
-  var rows=parseCsv(text);if(!rows.length)return[];
-  var first=rows[0].map(function(x){return String(x).trim().toLowerCase()}),nameIdx=-1,monthIdx=-1,uimIdx=-1,vibeIdx=-1,hasHeader=false;
-  ['rsn','username','user','name','player'].some(function(k){var i=first.indexOf(k);if(i>=0){nameIdx=i;hasHeader=true;return true}});
-  ['months','tenure','months in clan','months_in_clan'].some(function(k){var i=first.indexOf(k);if(i>=0){monthIdx=i;hasHeader=true;return true}});
-  ['uim','ultimate ironman','ultimate_ironman'].some(function(k){var i=first.indexOf(k);if(i>=0){uimIdx=i;hasHeader=true;return true}});
-  ['vibe','modifier','em'].some(function(k){var i=first.indexOf(k);if(i>=0){vibeIdx=i;hasHeader=true;return true}});
-  if(nameIdx<0)nameIdx=0;
-  var data=hasHeader?rows.slice(1):rows,out=[],seen={};
-  data.forEach(function(r){
-    var rsn=String(r[nameIdx]||'').trim();if(!rsn)return;
-    var key=rsn.toLowerCase();if(seen[key])return;seen[key]=true;
-    var months=null;
-    if(monthIdx>=0&&String(r[monthIdx]||'').trim()!=='')months=cleanNumber(r[monthIdx],0);
-    else if(!hasHeader&&r.length>1&&String(r[1]||'').trim()!==''&&Number.isFinite(Number(r[1])))months=cleanNumber(r[1],0);
-    var uim=null;
-    if(uimIdx>=0){
-      var uv=String(r[uimIdx]||'').trim().toLowerCase();
-      uim=uv==='1'||uv==='true'||uv==='yes'||uv==='y'||uv==='uim';
-    }
-    var em=null;
-    if(vibeIdx>=0){
-      var ev=String(r[vibeIdx]||'').trim().toLowerCase();
-      if(ev==='hates em'||ev==='hates'||ev==='+10'||ev==='10')em=10;
-      else if(ev==='loves em'||ev==='loves'||ev==='-10')em=-10;
-      else em=0;
-    }
-    out.push({rsn:rsn,months:months,uim:uim,em:em});
-  });
-  return out;
-}
-
-async function importCsv(){
-  var file=$('csvFile').files&&$('csvFile').files[0],btn=$('importCsv'),msg=$('importStatus');
-  if(!file){msg.className='status err';msg.textContent='Choose a CSV file first.';return}
-  btn.disabled=true;
-  try{
-    var entries=csvMembers(await file.text());
-    if(!entries.length)throw Error('No usernames were found in the CSV.');
-    var failures=[];
-    for(var i=0;i<entries.length;i++){
-      var e=entries[i],existing=roster.find(function(x){return String(x.rsn).toLowerCase()===e.rsn.toLowerCase()}),months=e.months===null?(existing?existing.months:0):e.months;
-      msg.className='status';msg.textContent='Ranking '+(i+1)+'/'+entries.length+': '+e.rsn+'…';
-      try{
-        var uim=e.uim===null?(existing?!!existing.uim:false):e.uim;
-        var em=e.em===null?(existing?(existing.em||0):0):e.em;
-        var x=await fetchPlayerFast(e.rsn),m=playerToMember(x.data,months,uim,em);
-        upsertMember(m);draw();
-      }catch(err){failures.push(e.rsn+' ('+err.message+')')}
-      if(i<entries.length-1)await sleep(250);
-    }
-    msg.textContent='Saving '+roster.length+' members to the global clan hiscores…';
-    await saveGlobalRoster();
-    draw();
-    msg.className=failures.length?'status err':'status ok';
-    msg.textContent='Imported '+(entries.length-failures.length)+'/'+entries.length+' players and saved the clan hiscores globally.'+(failures.length?' Failed: '+failures.join(', '):'');
-  }catch(e){
-    msg.className='status err';msg.textContent='CSV import failed: '+e.message;
-  }finally{btn.disabled=false}
-}
-
 $('fetch').onclick=fetchStats;
 $('forceRefresh').onclick=forceRefreshStats;
 $('calc').onclick=calculateAndRefresh;
@@ -677,12 +591,6 @@ $('save').onclick=async function(){
 };
 $('reset').onclick=function(){location.reload()};
 $('reloadRoster').onclick=function(){loadGlobalRoster(true)};
-$('importCsv').onclick=importCsv;
-$('csv').onclick=function(){
-  var rows=[['Position','RSN','UIM','Vibe','Rank','Score','Months','EHB','CLog','Raid','CoX','CoX CM','ToB','HMT','ToA','ToA Expert']].concat(roster.map(function(m,i){return[i+1,m.rsn,m.uim?'Yes':'No',m.em===10?'Hates em':(m.em===-10?'Loves em':'Neither'),m.rank,m.score.toFixed(1),m.months,m.ehb,m.clog,m.raid.toFixed(1),m.ks.cox,m.ks.cm,m.ks.tob,m.ks.hmt,m.ks.toa,m.ks.toae]}));
-  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='osrs-clan-hiscores.csv';a.click()
-};
 $('rsn').addEventListener('keydown',function(e){if(e.key==='Enter')fetchStats()});
 document.querySelectorAll('input[name="uimMode"],input[name="emMod"]').forEach(function(el){el.addEventListener('change',calculate)});
 $('months').addEventListener('input',function(){updateTenureHelp();calculate()});
