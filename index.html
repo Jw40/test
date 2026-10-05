@@ -43,7 +43,7 @@
 <div class="sec">Benchmarks</div>
 <div class="fields three"><div><label>EHB = 100</label><input id="capEhb" type="number" value="1000"></div><div><label>CLog = 100</label><input id="capClog" type="number" value="1000"></div><div><label>Raid score = 100</label><input id="capRaid" type="number" value="1000"></div></div>
 <div class="sec">Tenure</div>
-<div class="fields"><div><label>Months to max bonus</label><input id="tenureCap" type="number" value="24"></div><div><label>Max tenure bonus %</label><input id="tenureBonus" type="number" value="25"></div></div>
+<div class="fields"><div><label>Months to max bonus</label><input id="tenureCap" type="number" value="24"></div><div><label>Max tenure bonus points</label><input id="tenureBonus" type="number" value="25"></div></div><div class="small" style="margin-top:7px">Tenure adds points directly. At the default settings, 24 months = +25 points.</div>
 <div class="sec">Rank thresholds</div>
 <div class="ranks" id="ranks"></div>
 <div class="row"><button class="primary" id="saveGlobal">Save for Everyone</button><button id="reloadGlobal">Reload Global</button></div><div id="globalConfigStatus" class="status">Loading global clan settings…</div>
@@ -332,10 +332,10 @@ function scoreValues(ehb,clog,raid,months,uim,em){
   var r=clamp(cleanNumber(raid,0)/Math.max(1,set.capRaid)*100,0,100);
   var skill=(e*set.wEhb+c*set.wClog+r*set.wRaid)/wt;
   var p=clamp(Math.log1p(cleanNumber(months,0))/Math.log1p(Math.max(1,set.tenureCap)),0,1);
-  var tenurePct=p*set.tenureBonus/100,tenurePoints=skill*tenurePct;
-  var mult=1+tenurePct,uimBonus=uim?20:0,emBonus=em===10?10:(em===-10?-10:0),score=skill+tenurePoints+uimBonus+emBonus,name=set.ranks[0][0];
+  var tenurePoints=p*set.tenureBonus;
+  var uimBonus=uim?20:0,emBonus=em===10?10:(em===-10?-10:0),score=skill+tenurePoints+uimBonus+emBonus,name=set.ranks[0][0];
   set.ranks.slice().sort(function(a,b){return a[1]-b[1]}).forEach(function(x){if(score>=x[1])name=x[0]});
-  return{score:score,rank:name,raid:cleanNumber(raid,0),skill:skill,mult:mult,tenurePct:tenurePct,tenurePoints:tenurePoints,uimBonus:uimBonus,emBonus:emBonus};
+  return{score:score,rank:name,raid:cleanNumber(raid,0),skill:skill,tenureProgress:p,tenurePoints:tenurePoints,uimBonus:uimBonus,emBonus:emBonus};
 }
 function enrichMember(m){
   m.ks=m.ks||{};
@@ -346,7 +346,7 @@ function enrichMember(m){
   m.score=x.score;m.rank=x.rank;
   return m;
 }
-function calculate(){readSet();var rr=raids(),isUim=uimSelected(),em=emModifier(),x=scoreValues(num('ehb'),num('clog'),rr,num('months'),isUim,em);$('score').textContent=x.score.toFixed(1);$('rank').textContent=x.rank;$('formula').innerHTML='Skill '+x.skill.toFixed(1)+' + Tenure '+x.tenurePoints.toFixed(1)+' ('+(x.tenurePct*100).toFixed(1)+'%)'+(isUim?' + UIM 20':'')+(em===10?' + Hates em 10':(em===-10?' - Loves em 10':''))+' = <b>'+x.score.toFixed(1)+'</b><br>Raid score: '+rr.toFixed(1);return x}
+function calculate(){readSet();var rr=raids(),months=num('months'),isUim=uimSelected(),em=emModifier(),x=scoreValues(num('ehb'),num('clog'),rr,months,isUim,em);$('score').textContent=x.score.toFixed(1);$('rank').textContent=x.rank;$('formula').innerHTML='Skill '+x.skill.toFixed(1)+' + Tenure '+x.tenurePoints.toFixed(1)+' pts ('+months+' months)'+(isUim?' + UIM 20':'')+(em===10?' + Hates em 10':(em===-10?' - Loves em 10':''))+' = <b>'+x.score.toFixed(1)+'</b><br>Raid score: '+rr.toFixed(1);return x}
 function metricEntry(group,key){
   if(!group)return null;
   if(group[key])return group[key];
@@ -474,7 +474,7 @@ async function calculateAndRefresh(){
     Object.keys(m.ks).forEach(function(k){$(k).value=m.ks[k]});
     var result=calculate();
     $('status').className='status ok';
-    $('status').textContent='Recalculated '+m.rsn+'. Score '+result.score.toFixed(1)+' · '+result.rank+' · HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
+    $('status').textContent='Recalculated '+m.rsn+'. Score '+result.score.toFixed(1)+' · Tenure +'+result.tenurePoints.toFixed(1)+' · '+result.rank+' · HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
   }catch(e){
     var result=calculate();
     $('status').className='status err';
