@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "updatedAt": "2026-10-05",
+  "settings": {
+    "wEhb": 45,
+    "wClog": 25,
+    "wRaid": 30,
+    "capEhb": 1000,
+    "capClog": 1000,
+    "capRaid": 1000,
+    "tenureCap": 24,
+    "tenureBonus": 25,
+    "ranks": [
+      [
+        "Bronze Scim",
+        0
+      ],
+      [
+        "Iron Scim",
+        20
+      ],
+      [
+        "Steel Scim",
+        40
+      ],
+      [
+        "Mith Scim",
+        60
+      ],
+      [
+        "Addy Scim",
+        80
+      ],
+      [
+        "Rune Scim",
+        100
+      ],
+      [
+        "Dragon Scim",
+        115
+      ]
+    ]
+  }
+}
