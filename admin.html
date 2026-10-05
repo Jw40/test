@@ -179,11 +179,10 @@ async function legacyKvGet(key){
 }
 
 async function kvPrimaryGet(key){
-  var r=await fetch(KEYVAL+'/get',{
-    method:'POST',
+  var r=await fetch(KEYVAL+'/get/'+encodeURIComponent(key)+'?t='+Date.now(),{
+    method:'GET',
     cache:'no-store',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({key:key})
+    headers:{'Accept':'text/plain, application/json'}
   });
   if(!r.ok)return null;
   var v=unwrapKeyValBody(await r.text());
@@ -201,21 +200,23 @@ async function kvGet(key){
 async function kvSet(key,value){
   value=String(value);
   if(value.length>300)throw Error('Shared value exceeded the storage limit.');
-  var r=await fetch(KEYVAL+'/set',{
-    method:'POST',
-    cache:'no-store',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({key:key,val:value||'_'})
-  });
-  if(!r.ok)throw Error('Shared save failed (HTTP '+r.status+').');
   var expected=value||'_';
-  var verified=null;
+  var lastErr=null;
   for(var attempt=0;attempt<3;attempt++){
-    if(attempt)await new Promise(function(resolve){setTimeout(resolve,150)});
-    verified=await kvPrimaryGet(key);
-    if(verified===expected)return;
+    try{
+      var url=KEYVAL+'/set/'+encodeURIComponent(key)+'/'+encodeURIComponent(expected)+'?t='+Date.now();
+      var r=await fetch(url,{method:'GET',cache:'no-store',headers:{'Accept':'text/plain, application/json'}});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      await new Promise(function(resolve){setTimeout(resolve,250)});
+      var verified=await kvPrimaryGet(key);
+      if(verified===expected)return;
+      lastErr=Error('read-back did not match');
+    }catch(e){
+      lastErr=e;
+    }
+    await new Promise(function(resolve){setTimeout(resolve,250)});
   }
-  throw Error('Shared save could not be verified. Please try again.');
+  throw Error('Shared save failed verification'+(lastErr?': '+lastErr.message:'')+'.');
 }
 
 async function writeGlobal(settings){
