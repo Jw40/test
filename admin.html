@@ -126,8 +126,8 @@ var RANK_NAMES=['Bronze Scim','Iron Scim','Steel Scim','Mith Scim','Addy Scim','
 var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
 var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
 var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
-var ROSTER_SHARD_LIMIT=280;
-var ROSTER_RECOVERY_SCAN=24,adminLoadedShards=[],KV_LEGACY_HIT=false;
+var ROSTER_SHARD_LIMIT=90;
+var ROSTER_RECOVERY_SCAN=120,adminLoadedShards=[],KV_LEGACY_HIT=false;
 var adminRoster=[];
 
 function cloneObj(o){return JSON.parse(JSON.stringify(o))}
@@ -334,6 +334,7 @@ function packAdminRoster(){
   var shards=[],cur='';
   adminRoster.forEach(function(m){
     var rec=m.raw;
+    if(rec.length>ROSTER_SHARD_LIMIT)throw Error('A clan member record is too large to save.');
     var next=cur?cur+';'+rec:rec;
     if(next.length<=ROSTER_SHARD_LIMIT)cur=next;
     else{
@@ -472,14 +473,14 @@ function adminPlayerRecord(p,months,uim,em){
   var vals=[
     encodeURIComponent(String(p.displayName||p.username||'Unknown')),
     Math.max(0,Number(months)||0),
-    Math.max(0,Number(ehb)||0),
-    Math.max(0,Number(clog)||0),
-    adminKc(b,'chambers_of_xeric'),
-    adminKc(b,'chambers_of_xeric_challenge_mode'),
-    adminKc(b,'theatre_of_blood'),
-    adminKc(b,'theatre_of_blood_hard_mode'),
-    adminKc(b,'tombs_of_amascut'),
-    adminKc(b,'tombs_of_amascut_expert'),
+    Math.round(Math.max(0,Number(ehb)||0)*100)/100,
+    Math.round(Math.max(0,Number(clog)||0)),
+    Math.round(adminKc(b,'chambers_of_xeric')),
+    Math.round(adminKc(b,'chambers_of_xeric_challenge_mode')),
+    Math.round(adminKc(b,'theatre_of_blood')),
+    Math.round(adminKc(b,'theatre_of_blood_hard_mode')),
+    Math.round(adminKc(b,'tombs_of_amascut')),
+    Math.round(adminKc(b,'tombs_of_amascut_expert')),
     uim?1:0,
     em===10?10:(em===-10?-10:0)
   ];
