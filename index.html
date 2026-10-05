@@ -76,6 +76,7 @@ var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
 var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
 var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
 var ROSTER_SHARD_LIMIT=280;
+var ROSTER_RECOVERY_SCAN=24,rosterLoadedShards=[];
 
 function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
 
@@ -172,11 +173,16 @@ async function loadGlobalRoster(showMessage){
   var msg=$('importStatus');
   try{
     var meta=await kvGet(ROSTER_META_KEY),count=Math.max(0,parseInt(meta||'0',10)||0),all=[];
-    for(var i=0;i<count;i++){
-      var raw=await kvGet(ROSTER_SHARD_PREFIX+i);
-      if(!raw||raw==='_')continue;
+    var scanCount=Math.max(count,ROSTER_RECOVERY_SCAN);
+    var jobs=[];
+    for(var i=0;i<scanCount;i++)jobs.push(kvGet(ROSTER_SHARD_PREFIX+i));
+    var raws=await Promise.all(jobs);
+    rosterLoadedShards=[];
+    raws.forEach(function(raw,i){
+      if(!raw||raw==='_')return;
+      rosterLoadedShards.push(i);
       raw.split(';').forEach(function(rec){var m=decodeMember(rec);if(m)all.push(enrichMember(m))});
-    }
+    });
     var seen={};
     roster=all.filter(function(m){
       var k=String(m.rsn).trim().toLowerCase();
@@ -184,7 +190,10 @@ async function loadGlobalRoster(showMessage){
       seen[k]=true;return true;
     });
     draw();
-    if(showMessage!==false){msg.className='status ok';msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'}
+    if(showMessage!==false){
+      msg.className='status ok';
+      msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'+(rosterLoadedShards.some(function(i){return i>=count})?' Recovered roster data from older shards.':'');
+    }
     return true;
   }catch(e){
     msg.className='status err';msg.textContent='Could not load clan hiscores: '+e.message;
@@ -196,8 +205,12 @@ async function saveGlobalRoster(){
   var oldCount=Math.max(0,parseInt(await kvGet(ROSTER_META_KEY)||'0',10)||0);
   var shards=packRoster(roster);
   for(var i=0;i<shards.length;i++)await kvSet(ROSTER_SHARD_PREFIX+i,shards[i]);
-  for(var j=shards.length;j<oldCount;j++)await kvSet(ROSTER_SHARD_PREFIX+j,'_');
+  var stale={};
+  for(var j=shards.length;j<oldCount;j++)stale[j]=true;
+  rosterLoadedShards.forEach(function(i){if(i>=shards.length)stale[i]=true});
+  for(var key in stale)await kvSet(ROSTER_SHARD_PREFIX+key,'_');
   await kvSet(ROSTER_META_KEY,String(shards.length));
+  rosterLoadedShards=shards.map(function(_,i){return i});
 }
 
 function encodeGlobalSettings(o){
@@ -509,9 +522,8 @@ function draw(){
   var b=$('body');
   roster=roster.map(enrichMember).sort(function(a,b){return b.score-a.score||String(a.rsn).localeCompare(String(b.rsn))});
   if(!roster.length){b.innerHTML='<tr><td colspan="9" class="small">No clan members saved yet. Import a CSV or save a member above.</td></tr>';return}
-  b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+(i+1)+'</b></td><td><b>'+esc(m.rsn)+'</b>'+(m.uim?' <span class="pill">UIM +20</span>':'')+(m.em===10?' <span class="pill">Hates em +10</span>':(m.em===-10?' <span class="pill">Loves em -10</span>':''))+'</td><td><span class="pill">'+esc(m.rank)+'</span></td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td class="actions"><button onclick="editM('+i+')">Edit</button><button onclick="refreshM('+i+')">Refresh</button></td></tr>'}).join('')
+  b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+(i+1)+'</b></td><td><b>'+esc(m.rsn)+'</b>'+(m.uim?' <span class="pill">UIM +20</span>':'')+(m.em===10?' <span class="pill">Hates em +10</span>':(m.em===-10?' <span class="pill">Loves em -10</span>':''))+'</td><td><span class="pill">'+esc(m.rank)+'</span></td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td class="actions"><button onclick="refreshM('+i+')">Refresh</button></td></tr>'}).join('')
 }
-window.editM=function(i){var m=roster[i];edit=i;$('rsn').value=m.rsn;$('months').value=m.months;$('ehb').value=m.ehb;$('clog').value=m.clog;setUimSelected(!!m.uim);setEmModifier(m.em);Object.keys(m.ks||{}).forEach(function(k){$(k).value=m.ks[k]});calculate();scrollTo(0,0)}
 window.refreshM=async function(i){
   var m=roster[i],msg=$('importStatus');
   msg.className='status';msg.textContent='Refreshing '+m.rsn+'…';
