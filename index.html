@@ -222,12 +222,9 @@ async function loadGlobalRoster(showMessage){
     });
     draw();
     var recovered=rosterLoadedShards.some(function(i){return i>=count})||KV_LEGACY_HIT;
-    if(recovered&&roster.length){
-      try{await saveGlobalRoster();KV_LEGACY_HIT=false}catch(migrateErr){}
-    }
     if(showMessage!==false){
       msg.className='status ok';
-      msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'+(recovered?' Recovered and migrated older roster data.':'');
+      msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'+(recovered?' Additional older roster shards were read without modifying them.':'');
     }
     return true;
   }catch(e){
