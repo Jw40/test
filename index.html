@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OSRS Clan Rank Calculator</title>
 <style>
-:root{--bg:#0d1014;--p:#171b22;--p2:#202630;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:#0d1014;color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:1120px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:38px}.sub,.small{color:var(--m)}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:22px}.card{background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.check{display:flex;gap:7px;align-items:center;color:var(--m);font-size:12px}.check input{width:auto}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.result{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.metric{background:var(--p2);border:1px solid var(--l);border-radius:12px;padding:14px}.metric b{display:block;font-size:28px;margin-top:4px}.formula{margin-top:12px;background:#10141a;border:1px dashed #3b4553;border-radius:10px;padding:11px;color:#c8d0d9;font-family:monospace;font-size:12px;line-height:1.55}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.table{margin-top:18px;overflow:auto}.table table{width:100%;border-collapse:collapse;min-width:760px}.table th,.table td{padding:10px;border-bottom:1px solid var(--l);text-align:left;font-size:13px}.pill{padding:3px 7px;border-radius:99px;background:#28303b}.actions{display:flex;gap:8px}.danger{background:#3b1b1d;color:#ffc2c0}@media(max-width:850px){.grid{grid-template-columns:1fr}}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
+:root{--bg:#0d1014;--p:#171b22;--p2:#202630;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:#0d1014;color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:1120px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:38px}.sub,.small{color:var(--m)}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:22px}.card{background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.check{display:flex;gap:7px;align-items:center;color:var(--m);font-size:12px}.check input{width:auto}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.result{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.metric{background:var(--p2);border:1px solid var(--l);border-radius:12px;padding:14px}.metric b{display:block;font-size:28px;margin-top:4px}.formula{margin-top:12px;background:#10141a;border:1px dashed #3b4553;border-radius:10px;padding:11px;color:#c8d0d9;font-family:monospace;font-size:12px;line-height:1.55}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.table{margin-top:18px;overflow:auto}.table table{width:100%;border-collapse:collapse;min-width:980px}.table th,.table td{padding:10px;border-bottom:1px solid var(--l);text-align:left;font-size:13px}.pill{padding:3px 7px;border-radius:99px;background:#28303b}.actions{display:flex;gap:8px}.danger{background:#3b1b1d;color:#ffc2c0}@media(max-width:850px){.grid{grid-template-columns:1fr}}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -16,7 +16,7 @@
 <section class="card">
 <h2>Member</h2>
 <div class="fields"><div><label>RSN</label><input id="rsn" placeholder="e.g. Zezima"></div><div><label>Months in clan</label><input id="months" type="number" min="0" value="6"></div></div>
-<div class="row"><button class="primary" id="fetch">Fetch RSN stats</button><label class="check"><input id="refresh" type="checkbox">Refresh from Hiscores first</label></div>
+<div class="row"><button class="primary" id="fetch">Refresh & fetch RSN stats</button></div>
 <div id="status" class="status">Ready.</div>
 <div class="sec">Progression</div>
 <div class="fields"><div><label>EHB</label><input id="ehb" type="number" min="0" value="250"></div><div><label>Collection Log slots</label><input id="clog" type="number" min="0" value="600"></div></div>
@@ -48,14 +48,24 @@
 </section>
 </div>
 <section class="card" style="margin-top:18px">
-<div class="row" style="justify-content:space-between"><div><h2 style="margin:0">Clan roster</h2><span class="small">Saved in this browser.</span></div><div class="actions"><button id="csv">Export CSV</button><button class="danger" id="clear">Clear</button></div></div>
-<div class="table"><table><thead><tr><th>RSN</th><th>Months</th><th>EHB</th><th>CLog</th><th>Raid</th><th>Score</th><th>Rank</th><th></th></tr></thead><tbody id="body"></tbody></table></div>
+<div class="row" style="justify-content:space-between">
+  <div><h2 style="margin:0">Clan Hiscores</h2><span class="small">Shared globally — everyone sees the same ranked clan roster.</span></div>
+  <div class="actions"><button id="csv">Export CSV</button><button id="reloadRoster">Reload</button><button class="danger" id="clear">Clear all</button></div>
+</div>
+<div class="sec">Bulk import</div>
+<div class="row">
+  <input id="csvFile" type="file" accept=".csv,text/csv" style="max-width:360px">
+  <button class="primary" id="importCsv">Import CSV & Rank</button>
+</div>
+<div class="small" style="margin-top:7px">CSV can be just usernames, or <b>RSN,Months</b>. If months are missing, new members use 0 months tenure; existing members keep their saved tenure.</div>
+<div id="importStatus" class="status">Global clan roster ready.</div>
+<div class="table"><table><thead><tr><th>#</th><th>RSN</th><th>Rank</th><th>Score</th><th>Months</th><th>EHB</th><th>CLog</th><th>Raid</th><th></th></tr></thead><tbody id="body"></tbody></table></div>
 </section>
 </div>
 <script>
 var $=function(id){return document.getElementById(id)}, WOM='https://api.wiseoldman.net/v2/players/';
 var def={wEhb:45,wClog:25,wRaid:30,capEhb:1000,capClog:1000,capRaid:1000,tenureCap:24,tenureBonus:25,ranks:[['Bronze Scim',0],['Iron Scim',20],['Steel Scim',40],['Mith Scim',60],['Addy Scim',80],['Rune Scim',100],['Dragon Scim',115]]};
-var set=JSON.parse(JSON.stringify(def)), roster=JSON.parse(localStorage.getItem('rankRoster')||'[]'), edit=null;
+var set=JSON.parse(JSON.stringify(def)), roster=[], edit=null;
 function num(id){return Math.max(0,Number($(id).value||0))} function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
 function rankInputs(){var h='';set.ranks.forEach(function(r,i){h+='<div><label>'+r[0]+' minimum</label><input data-r="'+i+'" type="number" value="'+r[1]+'"></div>'});$('ranks').innerHTML=h}
 function loadSet(){['wEhb','wClog','wRaid','capEhb','capClog','capRaid','tenureCap','tenureBonus'].forEach(function(k){$(k).value=set[k];$(k).readOnly=false});rankInputs()}
@@ -65,6 +75,108 @@ function cloneObj(o){return JSON.parse(JSON.stringify(o))}
 var GLOBAL_KEY='jw40-osrs-clan-ranks-global-v2-20261005';
 var KEYVAL='https://api.keyval.org';
 var RANK_NAMES=['Bronze Scim','Iron Scim','Steel Scim','Mith Scim','Addy Scim','Rune Scim','Dragon Scim'];
+var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
+var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
+var ROSTER_SHARD_LIMIT=280;
+
+function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
+
+async function kvGet(key){
+  var r=await fetch(KEYVAL+'/get/'+encodeURIComponent(key)+'?t='+Date.now(),{method:'GET',cache:'no-store'});
+  if(!r.ok)return null;
+  var v=unwrapKeyValBody(await r.text());
+  return v||null;
+}
+
+async function kvSet(key,value){
+  value=String(value);
+  if(value.length>300)throw Error('Shared roster chunk exceeded the storage limit.');
+  var r=await fetch(KEYVAL+'/set/'+encodeURIComponent(key)+'/'+encodeURIComponent(value||'_'),{method:'GET',cache:'no-store'});
+  if(!r.ok)throw Error('Shared roster save failed (HTTP '+r.status+').');
+}
+
+function cleanNumber(v,d){
+  var n=Number(v);
+  if(!Number.isFinite(n))return d===undefined?0:d;
+  return Math.max(0,n);
+}
+
+function encodeMember(m){
+  var k=m.ks||{};
+  return [
+    encodeURIComponent(String(m.rsn||'').trim()),
+    cleanNumber(m.months,0),
+    Math.round(cleanNumber(m.ehb,0)*100)/100,
+    Math.round(cleanNumber(m.clog,0)),
+    Math.round(cleanNumber(k.cox,0)),
+    Math.round(cleanNumber(k.cm,0)),
+    Math.round(cleanNumber(k.tob,0)),
+    Math.round(cleanNumber(k.hmt,0)),
+    Math.round(cleanNumber(k.toa,0)),
+    Math.round(cleanNumber(k.toae,0))
+  ].join('~');
+}
+
+function decodeMember(raw){
+  var p=String(raw||'').split('~');
+  if(p.length!==10)return null;
+  try{
+    return {
+      rsn:decodeURIComponent(p[0]),
+      months:cleanNumber(p[1],0),
+      ehb:cleanNumber(p[2],0),
+      clog:cleanNumber(p[3],0),
+      ks:{
+        cox:cleanNumber(p[4],0),cm:cleanNumber(p[5],0),tob:cleanNumber(p[6],0),
+        hmt:cleanNumber(p[7],0),toa:cleanNumber(p[8],0),toae:cleanNumber(p[9],0)
+      }
+    };
+  }catch(e){return null}
+}
+
+function packRoster(list){
+  var records=list.map(encodeMember),shards=[],cur='';
+  records.forEach(function(rec){
+    if(rec.length>ROSTER_SHARD_LIMIT)throw Error('A clan member record is too large to save.');
+    var next=cur?cur+';'+rec:rec;
+    if(next.length<=ROSTER_SHARD_LIMIT)cur=next;
+    else{if(cur)shards.push(cur);cur=rec}
+  });
+  if(cur)shards.push(cur);
+  return shards;
+}
+
+async function loadGlobalRoster(showMessage){
+  var msg=$('importStatus');
+  try{
+    var meta=await kvGet(ROSTER_META_KEY),count=Math.max(0,parseInt(meta||'0',10)||0),all=[];
+    for(var i=0;i<count;i++){
+      var raw=await kvGet(ROSTER_SHARD_PREFIX+i);
+      if(!raw||raw==='_')continue;
+      raw.split(';').forEach(function(rec){var m=decodeMember(rec);if(m)all.push(enrichMember(m))});
+    }
+    var seen={};
+    roster=all.filter(function(m){
+      var k=String(m.rsn).trim().toLowerCase();
+      if(!k||seen[k])return false;
+      seen[k]=true;return true;
+    });
+    draw();
+    if(showMessage!==false){msg.className='status ok';msg.textContent='Loaded '+roster.length+' clan members from the global hiscores.'}
+    return true;
+  }catch(e){
+    msg.className='status err';msg.textContent='Could not load clan hiscores: '+e.message;
+    return false;
+  }
+}
+
+async function saveGlobalRoster(){
+  var oldCount=Math.max(0,parseInt(await kvGet(ROSTER_META_KEY)||'0',10)||0);
+  var shards=packRoster(roster);
+  for(var i=0;i<shards.length;i++)await kvSet(ROSTER_SHARD_PREFIX+i,shards[i]);
+  for(var j=shards.length;j<oldCount;j++)await kvSet(ROSTER_SHARD_PREFIX+j,'_');
+  await kvSet(ROSTER_META_KEY,String(shards.length));
+}
 
 function encodeGlobalSettings(o){
   var vals=[
@@ -167,6 +279,7 @@ async function saveGlobalSettings(){
     loadSet();
     calculate();
     msg.className='status ok';
+    roster=roster.map(enrichMember);draw();
     msg.textContent='Saved and verified globally. Refreshing the page will keep these values.';
   }catch(e){
     msg.className='status err';msg.textContent=e.message;
@@ -176,12 +289,35 @@ async function saveGlobalSettings(){
 async function initApp(){
   localStorage.removeItem('rankSet');
   localStorage.removeItem('rankConfigVersion');
+  localStorage.removeItem('rankRoster');
   var ok=await loadGlobal(false);
-  draw();calculate();
+  calculate();
+  await loadGlobalRoster(false);
   if(ok){$('globalConfigStatus').className='status ok';$('globalConfigStatus').textContent='Using the shared global clan settings.'}
+  $('importStatus').className='status ok';
+  $('importStatus').textContent='Loaded '+roster.length+' members from the global clan hiscores.';
 }
-function raids(){return num('cox')+1.5*num('cm')+1.5*num('tob')+2*num('hmt')+.75*num('toa')+1.25*num('toae')}
-function calculate(){readSet();var wt=set.wEhb+set.wClog+set.wRaid||1, e=clamp(num('ehb')/Math.max(1,set.capEhb)*100,0,100), c=clamp(num('clog')/Math.max(1,set.capClog)*100,0,100), rr=raids(), r=clamp(rr/Math.max(1,set.capRaid)*100,0,100), skill=(e*set.wEhb+c*set.wClog+r*set.wRaid)/wt, p=clamp(Math.log1p(num('months'))/Math.log1p(Math.max(1,set.tenureCap)),0,1), mult=1+p*set.tenureBonus/100, score=skill*mult, name=set.ranks[0][0];set.ranks.slice().sort(function(a,b){return a[1]-b[1]}).forEach(function(x){if(score>=x[1])name=x[0]});$('score').textContent=score.toFixed(1);$('rank').textContent=name;$('formula').innerHTML='Skill '+skill.toFixed(1)+' × tenure '+mult.toFixed(3)+' = <b>'+score.toFixed(1)+'</b><br>Raid score: '+rr.toFixed(1);return{score:score,rank:name,raid:rr}}
+function raidScore(k){k=k||{};return cleanNumber(k.cox,0)+1.5*cleanNumber(k.cm,0)+1.5*cleanNumber(k.tob,0)+2*cleanNumber(k.hmt,0)+.75*cleanNumber(k.toa,0)+1.25*cleanNumber(k.toae,0)}
+function raids(){return raidScore({cox:num('cox'),cm:num('cm'),tob:num('tob'),hmt:num('hmt'),toa:num('toa'),toae:num('toae')})}
+function scoreValues(ehb,clog,raid,months){
+  var wt=set.wEhb+set.wClog+set.wRaid||1;
+  var e=clamp(cleanNumber(ehb,0)/Math.max(1,set.capEhb)*100,0,100);
+  var c=clamp(cleanNumber(clog,0)/Math.max(1,set.capClog)*100,0,100);
+  var r=clamp(cleanNumber(raid,0)/Math.max(1,set.capRaid)*100,0,100);
+  var skill=(e*set.wEhb+c*set.wClog+r*set.wRaid)/wt;
+  var p=clamp(Math.log1p(cleanNumber(months,0))/Math.log1p(Math.max(1,set.tenureCap)),0,1);
+  var mult=1+p*set.tenureBonus/100,score=skill*mult,name=set.ranks[0][0];
+  set.ranks.slice().sort(function(a,b){return a[1]-b[1]}).forEach(function(x){if(score>=x[1])name=x[0]});
+  return{score:score,rank:name,raid:cleanNumber(raid,0),skill:skill,mult:mult};
+}
+function enrichMember(m){
+  m.ks=m.ks||{};
+  m.raid=raidScore(m.ks);
+  var x=scoreValues(m.ehb,m.clog,m.raid,m.months);
+  m.score=x.score;m.rank=x.rank;
+  return m;
+}
+function calculate(){readSet();var rr=raids(),x=scoreValues(num('ehb'),num('clog'),rr,num('months'));$('score').textContent=x.score.toFixed(1);$('rank').textContent=x.rank;$('formula').innerHTML='Skill '+x.skill.toFixed(1)+' × tenure '+x.mult.toFixed(3)+' = <b>'+x.score.toFixed(1)+'</b><br>Raid score: '+rr.toFixed(1);return x}
 function metricEntry(group,key){
   if(!group)return null;
   if(group[key])return group[key];
@@ -231,12 +367,174 @@ function apply(p){
   calculate();
   return loaded;
 }
-async function call(rsn,method){var res=await fetch(WOM+encodeURIComponent(rsn),{method:method,headers:{Accept:'application/json','Content-Type':'application/json'}}),data=null;try{data=await res.json()}catch(e){}return{res:res,data:data}}
-async function fetchStats(){var rsn=$('rsn').value.trim();if(!rsn){$('status').textContent='Enter an RSN first.';return}var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Contacting Wise Old Man…';try{var x=await call(rsn,$('refresh').checked?'POST':'GET');if(x.res.status===404)x=await call(rsn,'POST');if(!x.res.ok)throw Error((x.data&&(x.data.message||x.data.error))||('HTTP '+x.res.status));var loaded=apply(x.data);$('status').className='status ok';$('status').textContent='Loaded '+(x.data.displayName||x.data.username||rsn)+' from Wise Old Man. '+loaded.join(' · ')}catch(e){$('status').className='status err';$('status').textContent='Lookup failed: '+e.message}finally{btn.disabled=false}}
-function member(){var x=calculate();return{rsn:$('rsn').value.trim()||'Unnamed',months:num('months'),ehb:num('ehb'),clog:num('clog'),raid:x.raid,score:x.score,rank:x.rank,ks:{cox:num('cox'),cm:num('cm'),tob:num('tob'),hmt:num('hmt'),toa:num('toa'),toae:num('toae')}}}
+async function call(rsn,method){var url=WOM+encodeURIComponent(rsn)+(method==='GET'?('?t='+Date.now()):'');var res=await fetch(url,{method:method,cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json'}}),data=null;try{data=await res.json()}catch(e){}return{res:res,data:data}}
+
+async function fetchPlayerFresh(rsn){
+  var x=await call(rsn,'POST'),fresh=true;
+  if(!x.res.ok){fresh=false;x=await call(rsn,'GET')}
+  if(!x.res.ok)throw Error((x.data&&(x.data.message||x.data.error))||('HTTP '+x.res.status));
+  return{data:x.data,fresh:fresh};
+}
+
+function playerToMember(p,months){
+  var s=p.latestSnapshot&&p.latestSnapshot.data;
+  if(!s)throw Error('WOM returned no latest snapshot');
+  var b=s.bosses||{},a=s.activities||{};
+  var ehb=Number.isFinite(Number(p.ehb))?Number(p.ehb):(s.computed&&s.computed.ehb?Number(s.computed.ehb.value):0);
+  var clogEntry=metricEntry(a,'collections_logged');
+  var cl=clogEntry&&(clogEntry.score!==undefined?clogEntry.score:clogEntry.value);
+  var m={
+    rsn:p.displayName||p.username||'Unknown',
+    months:cleanNumber(months,0),
+    ehb:Math.max(0,Number(ehb)||0),
+    clog:Number.isFinite(Number(cl))&&Number(cl)>=0?Number(cl):0,
+    ks:{
+      cox:kc(b,'chambers_of_xeric')||0,
+      cm:kc(b,'chambers_of_xeric_challenge_mode')||0,
+      tob:kc(b,'theatre_of_blood')||0,
+      hmt:kc(b,'theatre_of_blood_hard_mode')||0,
+      toa:kc(b,'tombs_of_amascut')||0,
+      toae:kc(b,'tombs_of_amascut_expert')||0
+    }
+  };
+  return enrichMember(m);
+}
+
+async function fetchStats(){
+  var rsn=$('rsn').value.trim();
+  if(!rsn){$('status').textContent='Enter an RSN first.';return}
+  var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Refreshing from Wise Old Man…';
+  try{
+    var x=await fetchPlayerFresh(rsn),m=playerToMember(x.data,num('months'));
+    $('rsn').value=m.rsn;$('ehb').value=m.ehb;$('clog').value=m.clog;
+    Object.keys(m.ks).forEach(function(k){$(k).value=m.ks[k]});
+    calculate();
+    $('status').className='status ok';
+    $('status').textContent=(x.fresh?'Refreshed':'Loaded cached WOM data for')+' '+m.rsn+'. HMT '+m.ks.hmt+' · ToA '+m.ks.toa+' · ToA Expert '+m.ks.toae;
+  }catch(e){
+    $('status').className='status err';$('status').textContent='Lookup failed: '+e.message
+  }finally{btn.disabled=false}
+}
+function member(){return enrichMember({rsn:$('rsn').value.trim()||'Unnamed',months:num('months'),ehb:num('ehb'),clog:num('clog'),ks:{cox:num('cox'),cm:num('cm'),tob:num('tob'),hmt:num('hmt'),toa:num('toa'),toae:num('toae')}})}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function draw(){var b=$('body');if(!roster.length){b.innerHTML='<tr><td colspan="8" class="small">No members saved.</td></tr>';return}b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+esc(m.rsn)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td><span class="pill">'+esc(m.rank)+'</span></td><td><button onclick="editM('+i+')">Edit</button></td></tr>'}).join('')}
+function upsertMember(m){
+  var key=String(m.rsn||'').trim().toLowerCase(),i=roster.findIndex(function(x){return String(x.rsn||'').trim().toLowerCase()===key});
+  if(i>=0)roster[i]=m;else roster.push(m);
+}
+function draw(){
+  var b=$('body');
+  roster=roster.map(enrichMember).sort(function(a,b){return b.score-a.score||String(a.rsn).localeCompare(String(b.rsn))});
+  if(!roster.length){b.innerHTML='<tr><td colspan="9" class="small">No clan members saved yet. Import a CSV or save a member above.</td></tr>';return}
+  b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+(i+1)+'</b></td><td><b>'+esc(m.rsn)+'</b></td><td><span class="pill">'+esc(m.rank)+'</span></td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td class="actions"><button onclick="editM('+i+')">Edit</button><button onclick="refreshM('+i+')">Refresh</button><button class="danger" onclick="removeM('+i+')">Remove</button></td></tr>'}).join('')
+}
 window.editM=function(i){var m=roster[i];edit=i;$('rsn').value=m.rsn;$('months').value=m.months;$('ehb').value=m.ehb;$('clog').value=m.clog;Object.keys(m.ks||{}).forEach(function(k){$(k).value=m.ks[k]});calculate();scrollTo(0,0)}
-$('fetch').onclick=fetchStats;$('calc').onclick=calculate;$('saveGlobal').onclick=saveGlobalSettings;$('reloadGlobal').onclick=function(){loadGlobal(true)};$('save').onclick=function(){var m=member();if(edit===null)roster.push(m);else{roster[edit]=m;edit=null}localStorage.setItem('rankRoster',JSON.stringify(roster));draw()};$('reset').onclick=function(){location.reload()};$('clear').onclick=function(){if(confirm('Clear roster?')){roster=[];localStorage.setItem('rankRoster','[]');draw()}};$('csv').onclick=function(){var rows=[['RSN','Months','EHB','CLog','Raid','Score','Rank']].concat(roster.map(function(m){return[m.rsn,m.months,m.ehb,m.clog,m.raid,m.score.toFixed(1),m.rank]})),csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='osrs-clan-ranks.csv';a.click()};$('rsn').addEventListener('keydown',function(e){if(e.key==='Enter')fetchStats()});initApp();
+window.refreshM=async function(i){
+  var m=roster[i],msg=$('importStatus');
+  msg.className='status';msg.textContent='Refreshing '+m.rsn+'…';
+  try{
+    var x=await fetchPlayerFresh(m.rsn),fresh=playerToMember(x.data,m.months);
+    upsertMember(fresh);await saveGlobalRoster();draw();
+    msg.className='status ok';msg.textContent='Updated '+fresh.rsn+' in global clan hiscores.';
+  }catch(e){msg.className='status err';msg.textContent='Could not refresh '+m.rsn+': '+e.message}
+}
+window.removeM=async function(i){
+  var m=roster[i];if(!confirm('Remove '+m.rsn+' from the global clan hiscores?'))return;
+  roster.splice(i,1);draw();
+  try{await saveGlobalRoster();$('importStatus').className='status ok';$('importStatus').textContent='Removed '+m.rsn+' globally.'}
+  catch(e){$('importStatus').className='status err';$('importStatus').textContent='Remove failed: '+e.message}
+}
+
+function parseCsv(text){
+  var rows=[],row=[],cell='',quoted=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i],next=text[i+1];
+    if(quoted){
+      if(ch==='"'&&next==='"'){cell+='"';i++}
+      else if(ch==='"')quoted=false;
+      else cell+=ch;
+    }else{
+      if(ch==='"')quoted=true;
+      else if(ch===','){row.push(cell);cell=''}
+      else if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell=''}
+      else if(ch!=='\r')cell+=ch;
+    }
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row)}
+  return rows.filter(function(r){return r.some(function(x){return String(x).trim()})});
+}
+
+function csvMembers(text){
+  var rows=parseCsv(text);if(!rows.length)return[];
+  var first=rows[0].map(function(x){return String(x).trim().toLowerCase()}),nameIdx=-1,monthIdx=-1,hasHeader=false;
+  ['rsn','username','user','name','player'].some(function(k){var i=first.indexOf(k);if(i>=0){nameIdx=i;hasHeader=true;return true}});
+  ['months','tenure','months in clan','months_in_clan'].some(function(k){var i=first.indexOf(k);if(i>=0){monthIdx=i;hasHeader=true;return true}});
+  if(nameIdx<0)nameIdx=0;
+  var data=hasHeader?rows.slice(1):rows,out=[],seen={};
+  data.forEach(function(r){
+    var rsn=String(r[nameIdx]||'').trim();if(!rsn)return;
+    var key=rsn.toLowerCase();if(seen[key])return;seen[key]=true;
+    var months=null;
+    if(monthIdx>=0&&String(r[monthIdx]||'').trim()!=='')months=cleanNumber(r[monthIdx],0);
+    else if(!hasHeader&&r.length>1&&String(r[1]||'').trim()!==''&&Number.isFinite(Number(r[1])))months=cleanNumber(r[1],0);
+    out.push({rsn:rsn,months:months});
+  });
+  return out;
+}
+
+async function importCsv(){
+  var file=$('csvFile').files&&$('csvFile').files[0],btn=$('importCsv'),msg=$('importStatus');
+  if(!file){msg.className='status err';msg.textContent='Choose a CSV file first.';return}
+  btn.disabled=true;
+  try{
+    var entries=csvMembers(await file.text());
+    if(!entries.length)throw Error('No usernames were found in the CSV.');
+    var failures=[];
+    for(var i=0;i<entries.length;i++){
+      var e=entries[i],existing=roster.find(function(x){return String(x.rsn).toLowerCase()===e.rsn.toLowerCase()}),months=e.months===null?(existing?existing.months:0):e.months;
+      msg.className='status';msg.textContent='Ranking '+(i+1)+'/'+entries.length+': '+e.rsn+'…';
+      try{
+        var x=await fetchPlayerFresh(e.rsn),m=playerToMember(x.data,months);
+        upsertMember(m);draw();
+      }catch(err){failures.push(e.rsn+' ('+err.message+')')}
+      if(i<entries.length-1)await sleep(250);
+    }
+    msg.textContent='Saving '+roster.length+' members to the global clan hiscores…';
+    await saveGlobalRoster();
+    draw();
+    msg.className=failures.length?'status err':'status ok';
+    msg.textContent='Imported '+(entries.length-failures.length)+'/'+entries.length+' players and saved the clan hiscores globally.'+(failures.length?' Failed: '+failures.join(', '):'');
+  }catch(e){
+    msg.className='status err';msg.textContent='CSV import failed: '+e.message;
+  }finally{btn.disabled=false}
+}
+
+$('fetch').onclick=fetchStats;
+$('calc').onclick=calculate;
+$('saveGlobal').onclick=saveGlobalSettings;
+$('reloadGlobal').onclick=async function(){await loadGlobal(true);roster=roster.map(enrichMember);draw()};
+$('save').onclick=async function(){
+  var m=member(),msg=$('importStatus');
+  if(edit!==null&&roster[edit]&&String(roster[edit].rsn).toLowerCase()!==String(m.rsn).toLowerCase())roster.splice(edit,1);
+  edit=null;upsertMember(m);draw();
+  msg.className='status';msg.textContent='Saving '+m.rsn+' to global clan hiscores…';
+  try{await saveGlobalRoster();msg.className='status ok';msg.textContent='Saved '+m.rsn+' globally.'}
+  catch(e){msg.className='status err';msg.textContent='Save failed: '+e.message}
+};
+$('reset').onclick=function(){location.reload()};
+$('clear').onclick=async function(){
+  if(!confirm('Clear the GLOBAL clan hiscores for everyone?'))return;
+  roster=[];draw();$('importStatus').className='status';$('importStatus').textContent='Clearing global clan hiscores…';
+  try{await saveGlobalRoster();$('importStatus').className='status ok';$('importStatus').textContent='Global clan hiscores cleared.'}
+  catch(e){$('importStatus').className='status err';$('importStatus').textContent='Clear failed: '+e.message}
+};
+$('reloadRoster').onclick=function(){loadGlobalRoster(true)};
+$('importCsv').onclick=importCsv;
+$('csv').onclick=function(){
+  var rows=[['Position','RSN','Rank','Score','Months','EHB','CLog','Raid','CoX','CoX CM','ToB','HMT','ToA','ToA Expert']].concat(roster.map(function(m,i){return[i+1,m.rsn,m.rank,m.score.toFixed(1),m.months,m.ehb,m.clog,m.raid.toFixed(1),m.ks.cox,m.ks.cm,m.ks.tob,m.ks.hmt,m.ks.toa,m.ks.toae]}));
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='osrs-clan-hiscores.csv';a.click()
+};
+$('rsn').addEventListener('keydown',function(e){if(e.key==='Enter')fetchStats()});
+initApp();
 </script>
 </body></html>
