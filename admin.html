@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>DIY Rank Admin</title>
+<style>
+:root{--bg:#0d1014;--p:#171b22;--t:#f3f5f7;--m:#9aa4b2;--l:#2d3541;--a:#d5a849;--g:#8bd3a7;--r:#ffaaa7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.w{max-width:820px;margin:auto;padding:28px 16px}h1{margin:0 0 8px;font-size:36px}.sub,.small{color:var(--m)}.card{margin-top:22px;background:var(--p);border:1px solid var(--l);border-radius:16px;padding:18px}.fields{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.three{grid-template-columns:repeat(3,1fr)}label{font-size:12px;color:var(--m);font-weight:700;display:block;margin:8px 0 5px}input{width:100%;background:#10141a;color:var(--t);border:1px solid var(--l);border-radius:9px;padding:10px}input[readonly]{opacity:.7;cursor:not-allowed}button{border:0;border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer;background:#28303b;color:var(--t)}button.primary{background:var(--a);color:#171108}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.status{margin-top:9px;font-size:12px;color:var(--m);min-height:18px}.ok{color:var(--g)}.err{color:var(--r)}.sec{margin:18px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#c7ced8;font-weight:800}.ranks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.back{display:inline-block;margin-top:10px;color:var(--a);font-weight:800;text-decoration:none}.back:hover{text-decoration:underline}@media(max-width:620px){.fields,.three,.ranks{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>DIY Rank Admin</h1>
+<div class="sub">Global calculator settings. Changes here affect everyone using the calculator.</div>
+<a class="back" href="index.html">← Back to calculator</a>
+
+<section class="card">
+<h2>Clan scoring rules</h2>
+<div class="small">Change the calculator settings here, then click <b>Save for Everyone</b>.</div>
+
+<div class="sec">Weights</div>
+<div class="fields three">
+  <div><label>EHB %</label><input id="wEhb" type="number" value="45"></div>
+  <div><label>CLog %</label><input id="wClog" type="number" value="25"></div>
+  <div><label>Raids %</label><input id="wRaid" type="number" value="30"></div>
+</div>
+
+<div class="sec">Benchmarks</div>
+<div class="fields three">
+  <div><label>EHB = 100</label><input id="capEhb" type="number" value="1000"></div>
+  <div><label>CLog = 100</label><input id="capClog" type="number" value="1000"></div>
+  <div><label>Raid score = 100</label><input id="capRaid" type="number" value="1000"></div>
+</div>
+
+<div class="sec">Tenure</div>
+<div class="fields">
+  <div><label>Months to max bonus</label><input id="tenureCap" type="number" value="72" readonly></div>
+  <div><label>Max tenure bonus points</label><input id="tenureBonus" type="number" value="35" readonly></div>
+</div>
+<div class="small" style="margin-top:7px">Tenure is fixed and linear: 72 months = +35 points.</div>
+
+<div class="sec">Rank thresholds</div>
+<div class="ranks" id="ranks"></div>
+
+<div class="row">
+  <button class="primary" id="saveGlobal">Save for Everyone</button>
+  <button id="reloadGlobal">Reload Global</button>
+</div>
+<div id="globalConfigStatus" class="status">Loading global clan settings…</div>
+</section>
+</div>
+
+<script>
+var $=function(id){return document.getElementById(id)};
+var def={wEhb:45,wClog:25,wRaid:30,capEhb:1000,capClog:1000,capRaid:1000,tenureCap:72,tenureBonus:35,ranks:[['Bronze Scim',0],['Iron Scim',20],['Steel Scim',40],['Mith Scim',60],['Addy Scim',80],['Rune Scim',100],['Dragon Scim',115]]};
+var set=JSON.parse(JSON.stringify(def));
+var GLOBAL_KEY='jw40-osrs-clan-ranks-global-v2-20261005';
+var KEYVAL='https://api.keyval.org';
+var RANK_NAMES=['Bronze Scim','Iron Scim','Steel Scim','Mith Scim','Addy Scim','Rune Scim','Dragon Scim'];
+var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
+
+function cloneObj(o){return JSON.parse(JSON.stringify(o))}
+function num(id){return Math.max(0,Number($(id).value||0))}
+function rankInputs(){var h='';set.ranks.forEach(function(r,i){h+='<div><label>'+r[0]+' minimum</label><input data-r="'+i+'" type="number" value="'+r[1]+'"></div>'});$('ranks').innerHTML=h}
+function loadSet(){
+  ['wEhb','wClog','wRaid','capEhb','capClog','capRaid'].forEach(function(k){$(k).value=set[k]});
+  set.tenureCap=TENURE_MAX_MONTHS;set.tenureBonus=TENURE_MAX_POINTS;
+  $('tenureCap').value=TENURE_MAX_MONTHS;$('tenureBonus').value=TENURE_MAX_POINTS;
+  rankInputs();
+}
+function readSet(){
+  ['wEhb','wClog','wRaid','capEhb','capClog','capRaid'].forEach(function(k){set[k]=num(k)});
+  set.tenureCap=TENURE_MAX_MONTHS;set.tenureBonus=TENURE_MAX_POINTS;
+  document.querySelectorAll('[data-r]').forEach(function(x){set.ranks[Number(x.dataset.r)][1]=Number(x.value||0)});
+}
+function unwrapKeyValBody(raw){
+  raw=String(raw||'').trim();
+  if(!raw)return '';
+  if(raw.charAt(0)==='"'){try{return String(JSON.parse(raw)||'').trim()}catch(e){}}
+  if(raw.charAt(0)==='{'){
+    try{
+      var obj=JSON.parse(raw);
+      if(obj&&obj.value!==undefined)return String(obj.value||'').trim();
+      if(obj&&obj.val!==undefined)return String(obj.val||'').trim();
+    }catch(e){}
+  }
+  return raw;
+}
+function encodeGlobalSettings(o){
+  var vals=[o.wEhb,o.wClog,o.wRaid,o.capEhb,o.capClog,o.capRaid,o.tenureCap,o.tenureBonus];
+  o.ranks.forEach(function(r){vals.push(r[1])});
+  return vals.join(',');
+}
+function decodeGlobalSettings(raw){
+  raw=unwrapKeyValBody(raw);
+  var parts=raw.split(',');
+  if(parts.length!==15)throw Error('Shared settings had the wrong number of values.');
+  var vals=parts.map(function(v){var n=Number(v);if(!Number.isFinite(n))throw Error('Shared settings contained an invalid number.');return n});
+  return {
+    wEhb:vals[0],wClog:vals[1],wRaid:vals[2],
+    capEhb:vals[3],capClog:vals[4],capRaid:vals[5],
+    tenureCap:TENURE_MAX_MONTHS,tenureBonus:TENURE_MAX_POINTS,
+    ranks:RANK_NAMES.map(function(name,i){return[name,vals[8+i]]})
+  };
+}
+async function writeGlobal(settings){
+  var value=encodeGlobalSettings(settings);
+  var r=await fetch(KEYVAL+'/set/'+GLOBAL_KEY+'/'+encodeURIComponent(value),{method:'GET',cache:'no-store'});
+  if(!r.ok)throw Error('Global save failed (HTTP '+r.status+').');
+}
+async function getGlobalSettings(){
+  var r=await fetch(KEYVAL+'/get/'+GLOBAL_KEY+'?t='+Date.now(),{method:'GET',cache:'no-store'});
+  if(!r.ok)throw Error('Could not load shared settings (HTTP '+r.status+').');
+  var raw=unwrapKeyValBody(await r.text());
+  if(!raw)throw Error('Shared settings were empty.');
+  return decodeGlobalSettings(raw);
+}
+async function loadGlobal(showMessage){
+  var msg=$('globalConfigStatus');
+  try{
+    set=cloneObj(await getGlobalSettings());
+    set.tenureCap=TENURE_MAX_MONTHS;set.tenureBonus=TENURE_MAX_POINTS;
+    loadSet();
+    if(showMessage!==false){msg.className='status ok';msg.textContent='Loaded the shared calculator settings.'}
+  }catch(e){
+    set=cloneObj(def);loadSet();
+    msg.className='status err';msg.textContent='Could not load global settings: '+e.message;
+  }
+}
+async function saveGlobalSettings(){
+  var btn=$('saveGlobal'),msg=$('globalConfigStatus');
+  btn.disabled=true;msg.className='status';msg.textContent='Saving for everyone…';
+  try{
+    readSet();
+    var total=set.wEhb+set.wClog+set.wRaid;
+    if(total!==100)throw Error('EHB + CLog + Raid weights must add up to 100. They currently add to '+total+'.');
+    if(set.capEhb<=0||set.capClog<=0||set.capRaid<=0)throw Error('Benchmarks must be greater than 0.');
+    await writeGlobal(set);
+    set=cloneObj(await getGlobalSettings());
+    set.tenureCap=TENURE_MAX_MONTHS;set.tenureBonus=TENURE_MAX_POINTS;
+    loadSet();
+    msg.className='status ok';msg.textContent='Saved globally. The calculator will use these values for everyone.';
+  }catch(e){
+    msg.className='status err';msg.textContent=e.message;
+  }finally{btn.disabled=false}
+}
+$('saveGlobal').onclick=saveGlobalSettings;
+$('reloadGlobal').onclick=function(){loadGlobal(true)};
+loadGlobal(false);
+</script>
+</body>
+</html>
