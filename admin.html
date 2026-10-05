@@ -96,6 +96,7 @@ function showAdmin(){
   $('loginView').classList.add('hidden');
   $('adminPanel').classList.remove('hidden');
   loadGlobal(false);
+  loadAdminRoster(false);
 }
 async function loginAdmin(){
   var user=$('adminUser').value.trim();
@@ -117,6 +118,10 @@ var GLOBAL_KEY='jw40-osrs-clan-ranks-global-v2-20261005';
 var KEYVAL='https://api.keyval.org';
 var RANK_NAMES=['Bronze Scim','Iron Scim','Steel Scim','Mith Scim','Addy Scim','Rune Scim','Dragon Scim'];
 var TENURE_MAX_MONTHS=72,TENURE_MAX_POINTS=35;
+var ROSTER_META_KEY='jw40-osrs-clan-roster-meta-v1-20261005';
+var ROSTER_SHARD_PREFIX='jw40-osrs-clan-roster-v1-20261005-';
+var ROSTER_SHARD_LIMIT=280;
+var adminRoster=[];
 
 function cloneObj(o){return JSON.parse(JSON.stringify(o))}
 function num(id){return Math.max(0,Number($(id).value||0))}
