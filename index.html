@@ -182,10 +182,57 @@ async function initApp(){
 }
 function raids(){return num('cox')+1.5*num('cm')+1.5*num('tob')+2*num('hmt')+.75*num('toa')+1.25*num('toae')}
 function calculate(){readSet();var wt=set.wEhb+set.wClog+set.wRaid||1, e=clamp(num('ehb')/Math.max(1,set.capEhb)*100,0,100), c=clamp(num('clog')/Math.max(1,set.capClog)*100,0,100), rr=raids(), r=clamp(rr/Math.max(1,set.capRaid)*100,0,100), skill=(e*set.wEhb+c*set.wClog+r*set.wRaid)/wt, p=clamp(Math.log1p(num('months'))/Math.log1p(Math.max(1,set.tenureCap)),0,1), mult=1+p*set.tenureBonus/100, score=skill*mult, name=set.ranks[0][0];set.ranks.slice().sort(function(a,b){return a[1]-b[1]}).forEach(function(x){if(score>=x[1])name=x[0]});$('score').textContent=score.toFixed(1);$('rank').textContent=name;$('formula').innerHTML='Skill '+skill.toFixed(1)+' × tenure '+mult.toFixed(3)+' = <b>'+score.toFixed(1)+'</b><br>Raid score: '+rr.toFixed(1);return{score:score,rank:name,raid:rr}}
-function kc(b,k){var v=b&&b[k]&&b[k].kills;return Number.isFinite(Number(v))?Math.max(0,Number(v)):null}
-function apply(p){var s=p.latestSnapshot&&p.latestSnapshot.data;if(!s)throw Error('WOM returned no latest snapshot');var b=s.bosses||{},a=s.activities||{},ehb=Number.isFinite(Number(p.ehb))?Number(p.ehb):(s.computed&&s.computed.ehb?Number(s.computed.ehb.value):null);if(ehb!==null)$('ehb').value=Math.max(0,ehb);var cl=a.collections_logged&&a.collections_logged.score;if(Number.isFinite(Number(cl))&&Number(cl)>=0)$('clog').value=Number(cl);var m={cox:'chambers_of_xeric',cm:'chambers_of_xeric_challenge_mode',tob:'theatre_of_blood',hmt:'theatre_of_blood_hard_mode',toa:'tombs_of_amascut',toae:'tombs_of_amascut_expert'};Object.keys(m).forEach(function(id){var v=kc(b,m[id]);if(v!==null)$(id).value=v});$('rsn').value=p.displayName||p.username||$('rsn').value;calculate()}
+function metricEntry(group,key){
+  if(!group)return null;
+  if(group[key])return group[key];
+  var vals=Array.isArray(group)?group:Object.keys(group).map(function(k){return group[k]});
+  for(var i=0;i<vals.length;i++){
+    var x=vals[i];
+    if(!x)continue;
+    var metric=String(x.metric||x.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    if(metric===key)return x;
+  }
+  return null;
+}
+function kc(b,key){
+  var x=metricEntry(b,key);
+  if(!x)return null;
+  var candidates=[x.kills,x.score,x.value];
+  for(var i=0;i<candidates.length;i++){
+    var n=Number(candidates[i]);
+    if(Number.isFinite(n))return n<0?0:n;
+  }
+  return null;
+}
+function apply(p){
+  var s=p.latestSnapshot&&p.latestSnapshot.data;
+  if(!s)throw Error('WOM returned no latest snapshot');
+  var b=s.bosses||{},a=s.activities||{};
+  var ehb=Number.isFinite(Number(p.ehb))?Number(p.ehb):(s.computed&&s.computed.ehb?Number(s.computed.ehb.value):null);
+  if(ehb!==null)$('ehb').value=Math.max(0,ehb);
+  var clogEntry=metricEntry(a,'collections_logged');
+  var cl=clogEntry&&(clogEntry.score!==undefined?clogEntry.score:clogEntry.value);
+  if(Number.isFinite(Number(cl))&&Number(cl)>=0)$('clog').value=Number(cl);
+
+  var m={
+    cox:'chambers_of_xeric',
+    cm:'chambers_of_xeric_challenge_mode',
+    tob:'theatre_of_blood',
+    hmt:'theatre_of_blood_hard_mode',
+    toa:'tombs_of_amascut',
+    toae:'tombs_of_amascut_expert'
+  };
+  var loaded=[];
+  Object.keys(m).forEach(function(id){
+    var v=kc(b,m[id]);
+    if(v!==null){$(id).value=v;loaded.push(id.toUpperCase()+': '+v)}
+  });
+  $('rsn').value=p.displayName||p.username||$('rsn').value;
+  calculate();
+  return loaded;
+}
 async function call(rsn,method){var res=await fetch(WOM+encodeURIComponent(rsn),{method:method,headers:{Accept:'application/json','Content-Type':'application/json'}}),data=null;try{data=await res.json()}catch(e){}return{res:res,data:data}}
-async function fetchStats(){var rsn=$('rsn').value.trim();if(!rsn){$('status').textContent='Enter an RSN first.';return}var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Contacting Wise Old Man…';try{var x=await call(rsn,$('refresh').checked?'POST':'GET');if(x.res.status===404)x=await call(rsn,'POST');if(!x.res.ok)throw Error((x.data&&(x.data.message||x.data.error))||('HTTP '+x.res.status));apply(x.data);$('status').className='status ok';$('status').textContent='Loaded '+(x.data.displayName||x.data.username||rsn)+' from Wise Old Man.'}catch(e){$('status').className='status err';$('status').textContent='Lookup failed: '+e.message}finally{btn.disabled=false}}
+async function fetchStats(){var rsn=$('rsn').value.trim();if(!rsn){$('status').textContent='Enter an RSN first.';return}var btn=$('fetch');btn.disabled=true;$('status').className='status';$('status').textContent='Contacting Wise Old Man…';try{var x=await call(rsn,$('refresh').checked?'POST':'GET');if(x.res.status===404)x=await call(rsn,'POST');if(!x.res.ok)throw Error((x.data&&(x.data.message||x.data.error))||('HTTP '+x.res.status));var loaded=apply(x.data);$('status').className='status ok';$('status').textContent='Loaded '+(x.data.displayName||x.data.username||rsn)+' from Wise Old Man. '+loaded.join(' · ')}catch(e){$('status').className='status err';$('status').textContent='Lookup failed: '+e.message}finally{btn.disabled=false}}
 function member(){var x=calculate();return{rsn:$('rsn').value.trim()||'Unnamed',months:num('months'),ehb:num('ehb'),clog:num('clog'),raid:x.raid,score:x.score,rank:x.rank,ks:{cox:num('cox'),cm:num('cm'),tob:num('tob'),hmt:num('hmt'),toa:num('toa'),toae:num('toae')}}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function draw(){var b=$('body');if(!roster.length){b.innerHTML='<tr><td colspan="8" class="small">No members saved.</td></tr>';return}b.innerHTML=roster.map(function(m,i){return'<tr><td><b>'+esc(m.rsn)+'</b></td><td>'+m.months+'</td><td>'+Number(m.ehb).toFixed(1)+'</td><td>'+m.clog+'</td><td>'+Number(m.raid).toFixed(0)+'</td><td><b>'+Number(m.score).toFixed(1)+'</b></td><td><span class="pill">'+esc(m.rank)+'</span></td><td><button onclick="editM('+i+')">Edit</button></td></tr>'}).join('')}
